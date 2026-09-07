@@ -9,3 +9,12 @@ response = client.chat.completions.create(
 	 model="gemini-3.8-flash-free",
 	 
 	   model="coding-glm-5.3-free",
+
+sk-apxfe8ba02241b2b8137dc5c9b45f57e700b9042db6e25918
+https://api.apinex.bond/v1
+
+free/gemini-3.8-flash
+free/muse-spark-1.3
+free/glm-5.3-flash
+free/deepseek-v4-pro-0813
+free/qwen-3.8-max
