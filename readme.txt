@@ -18,3 +18,7 @@ free/muse-spark-1.3
 free/glm-5.3-flash
 free/deepseek-v4-pro-0813
 free/qwen-3.8-max
+
+sk-nry-DV-pXc_TjMnY9eZH7K6I390QX_sy3H4x02rgIW84_m
+https://router.bynara.id/v1
+qwen3.8-27b
