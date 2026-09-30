@@ -1,3 +1,6 @@
+Hi Mohan, one small clarification for prc_mlv_customer_addl_info. For the new procedure, should I keep all the IN parameters from the existing prc_edit_customer_addl_info, or only the parameters required for the MLV flow?
+
+
 IMPLEMENTATION TASK — QFXLM CUSTOMER ADDITIONAL INFO MLV WRAPPER
 
 OBJECTIVE
