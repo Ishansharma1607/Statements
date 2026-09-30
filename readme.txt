@@ -1,3 +1,102 @@
+The implementation of `prc_mlv_customer_addl_info` in
+`Packages/PKG_QLM_INCOMING_STATIC_MSG.sql` is now complete.
+
+Do NOT modify any code yet.
+
+I want you to perform a thorough review of my current uncommitted changes before I submit them for review.
+
+Please do the following:
+
+1. Inspect the current Git diff and identify exactly what I changed.
+
+2. Review the current declaration of:
+   `PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info`
+   Treat the CURRENT repository version as the source of truth.
+
+3. Verify the new:
+   `PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info`
+
+   against that existing procedure.
+
+4. Specifically verify:
+   - Every required IN parameter from `prc_edit_customer_addl_info`
+     is present in `prc_mlv_customer_addl_info`.
+   - Parameter names are correct.
+   - Datatypes and `%TYPE` references are correct.
+   - Collection/record parameter types are correct.
+   - Parameter defaults are preserved where applicable.
+   - There are no obsolete or extra parameters accidentally copied.
+   - The package specification and package body declarations match.
+   - The wrapper passes the parameters to
+     `PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info`
+     correctly.
+   - Prefer named parameter notation in the delegate call and verify
+     that every mapping goes to the correct parameter.
+   - No required IN parameter is omitted.
+   - No business logic, DML, validation or transformation was
+     unnecessarily duplicated in the wrapper.
+   - `PKG_CUSTOMER_ADDL_INFO_MGMT.sql` itself has not been modified.
+
+5. Search the repository for the sample/reference wrapper mentioned for
+   this flow and compare its delegation pattern with my implementation.
+   Also inspect similar wrappers in `PKG_QLM_INCOMING_STATIC_MSG`.
+
+6. Check the Git diff for accidental formatting changes, unrelated
+   modifications, duplicate procedure declarations, or other files
+   changed unintentionally.
+
+7. Do NOT edit anything automatically.
+
+At the end give me a review report in this format:
+
+VERDICT:
+PASS / ISSUES FOUND
+
+GIT CHANGES:
+- files changed
+- intended vs suspicious changes
+
+SPEC/BODY:
+- whether signatures match
+
+PARAMETER VERIFICATION:
+- expected IN parameter count
+- wrapper IN parameter count
+- missing parameters
+- extra parameters
+- datatype/default mismatches
+
+DELEGATE CALL:
+- missing mappings
+- incorrect mappings
+- suspicious mappings
+
+REFERENCE IMPLEMENTATION:
+- what was compared
+- relevant differences
+
+RISKS / ISSUES:
+- exact file and line for every issue
+
+DATABASE VALIDATION STILL REQUIRED:
+- SQL statements I should run manually in Oracle SQL Developer
+
+Do not claim that Oracle compilation or runtime behavior is verified
+unless it can actually be established from the repository.
+
+
+_—-----
+Now perform a second independent review focused only on parameter mapping.
+Do not rely on your previous conclusion.
+
+Programmatically compare the current IN parameters of
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info against
+prc_mlv_customer_addl_info and its delegate call.
+
+Report any missing, extra, duplicated, reordered, incorrectly typed,
+or incorrectly mapped parameter. Do not modify code.
+
+--------
 Clarification received: For the new prc_mlv_customer_addl_info procedure, include all IN parameters from the existing PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info.
 Use the current declaration in the repository as the source of truth for parameter names, order, datatypes, %TYPE references, collection types, and default values.
 The requirement is specifically all IN parameters. Do not expose the existing OUT parameters or OUT cursors as parameters of the new wrapper unless they are required internally for calling the existing procedure.
