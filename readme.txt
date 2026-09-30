@@ -1,3 +1,59 @@
+Ignore problem-report.html and all Gradle wrapper related changes.
+Those are intentional manual changes and are unrelated to this task.
+
+Now perform a second independent verification focused ONLY on the
+PL/SQL implementation.
+
+Do not rely on your previous review conclusion and do not modify code.
+
+Compare the CURRENT declaration of:
+
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info
+
+against:
+
+PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info
+
+Verify mechanically:
+
+1. Every current IN parameter of prc_edit_customer_addl_info exists
+   in prc_mlv_customer_addl_info.
+2. There are no missing IN parameters.
+3. There are no unexpected extra IN parameters.
+4. Parameter names match exactly.
+5. Datatypes, %TYPE references and collection types match.
+6. Default values are preserved where applicable.
+7. The package specification and package body signatures match.
+8. Every wrapper IN parameter is mapped to the correct corresponding
+   parameter when prc_edit_customer_addl_info is invoked.
+9. No parameter is accidentally mapped to a similarly named but
+   different parameter.
+10. No delegate parameter is mapped twice or omitted.
+
+The existing OUT parameters/cursors may be handled using local variables
+inside the wrapper; do not require them to be exposed in the new
+procedure's public signature.
+
+Give me exact counts and a concise result:
+
+SOURCE IN PARAMETER COUNT:
+WRAPPER IN PARAMETER COUNT:
+MATCHED:
+MISSING:
+EXTRA:
+TYPE/DEFAULT MISMATCHES:
+DELEGATE MAPPING ISSUES:
+SPEC/BODY MISMATCHES:
+
+FINAL RESULT: PASS or ISSUES FOUND
+
+For every issue found, provide the exact parameter name and source/wrapper
+file locations.
+
+---
+
+
+
 Context / requirement:
 
 I was asked to add a new wrapper procedure:
