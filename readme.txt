@@ -1,3 +1,9 @@
+Clarification received: For the new prc_mlv_customer_addl_info procedure, include all IN parameters from the existing PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info.
+Use the current declaration in the repository as the source of truth for parameter names, order, datatypes, %TYPE references, collection types, and default values.
+The requirement is specifically all IN parameters. Do not expose the existing OUT parameters or OUT cursors as parameters of the new wrapper unless they are required internally for calling the existing procedure.
+Please re-analyze the implementation using this clarification and proceed.
+
+
 Hi Mohan, one small clarification for prc_mlv_customer_addl_info. For the new procedure, should I keep all the IN parameters from the existing prc_edit_customer_addl_info, or only the parameters required for the MLV flow?
 
 
