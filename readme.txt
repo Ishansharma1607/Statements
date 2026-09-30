@@ -1,3 +1,35 @@
+Context / requirement:
+
+I was asked to add a new wrapper procedure:
+PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info
+
+The wrapper is for incoming customer additional-information updates.
+
+The existing procedure containing the actual business logic is:
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info
+
+The new wrapper should:
+- contain all current IN parameters of prc_edit_customer_addl_info
+- delegate to the existing prc_edit_customer_addl_info
+- reuse the existing business logic
+- not duplicate CRUD/validation/business logic
+- not modify PKG_CUSTOMER_ADDL_INFO_MGMT
+- be declared and implemented inside the existing
+  PKG_QLM_INCOMING_STATIC_MSG package
+- not create a new package or standalone procedure
+
+The requirement owner specifically clarified that the new procedure
+should keep all IN parameters from the existing
+prc_edit_customer_addl_info.
+
+The implementation has already been completed and successfully compiled
+in the Dev Oracle database with no errors.
+
+Your task now is REVIEW ONLY. Do not modify code unless I explicitly
+ask you after the review.
+
+
+
 The implementation of `prc_mlv_customer_addl_info` in
 `Packages/PKG_QLM_INCOMING_STATIC_MSG.sql` is now complete.
 
