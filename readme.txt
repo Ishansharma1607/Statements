@@ -1,3 +1,19 @@
+Based on the Jira/task requirements and the repository code, help me understand the business/integration context of Jira 42566.
+
+Specifically find:
+1. What exact customer additional/static data this change handles.
+2. Which upstream system/service sends this data to QFXLM.
+3. What QFX/QFXLM represents in this flow.
+4. How the data reaches PKG_QLM_INCOMING_STATIC_MSG.
+5. What happens after prc_mlv_customer_addl_info receives it.
+
+Search the repository for evidence. Do not guess. Clearly mark anything that cannot be determined from the code and needs confirmation from Mohan.
+
+Give me a short 30-second explanation I can say to my lead.
+
+-----
+
+
 Ignore problem-report.html and all Gradle wrapper related changes.
 Those are intentional manual changes and are unrelated to this task.
 
