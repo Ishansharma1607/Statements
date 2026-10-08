@@ -1,3 +1,23 @@
+Review the exception handling in "prc_mlv_customer_addl_info".
+
+Mohan requested "p_success_flag" and "p_error_message" OUT parameters so Java can read the result.
+
+Currently, the exception block assigns the OUT parameters but also calls "RAISE_APPLICATION_ERROR(-20001, ...)" and performs "ROLLBACK".
+
+Please verify whether this is consistent with the existing incoming static-message procedures and Java integration conventions.
+
+Specifically:
+
+1. Check whether raising an exception prevents Java from receiving the OUT parameters.
+2. Check whether the wrapper should perform "ROLLBACK", considering caller-managed transactions.
+3. Verify that success and error results from the delegated procedure are correctly propagated.
+4. Review handling of "NO_DATA_FOUND" from the branch-description lookup.
+5. Recommend the safest implementation consistent with existing project patterns.
+
+Do not modify code yet. Explain any issues and recommended changes first.
+
+
+----------
 Task: Implement Mohan's review comments — Jira 42566
 
 I have already implemented "prc_mlv_customer_addl_info" inside:
