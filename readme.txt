@@ -1,3 +1,196 @@
+Task: Implement Mohan's review comments — Jira 42566
+
+I have already implemented "prc_mlv_customer_addl_info" inside:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+The procedure currently delegates to:
+
+"PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info"
+
+The original implementation has already compiled successfully in the Oracle Dev database, and the previous verification confirmed that all 277 IN parameters matched the existing procedure.
+
+However, Mohan has now reviewed the implementation and requested additional changes.
+
+Please implement all the changes below while preserving existing functionality.
+
+1. Add change history
+
+Follow the existing change-history format in "PKG_QLM_INCOMING_STATIC_MSG.sql".
+
+Add an entry containing:
+
+- Developer: Ishan Sharma
+- Jira: 42566
+- Date: 08-Oct-2026
+- Description: Added customer additional-info incoming static message wrapper with customer existence validation.
+
+Follow the existing history column layout, tab alignment, and comment style.
+
+2. Replace staging table datatype references with main table references
+
+Currently, many procedure parameters use declarations such as:
+
+"qlm_customer_addl_info_q.fo_short_name%TYPE"
+
+Mohan specifically instructed us to use the main table instead of the "_q" staging table for datatype references.
+
+Change these to:
+
+"qlm_customer_addl_info.fo_short_name%TYPE"
+
+Apply this consistently to the new wrapper declaration in both the package specification and package body.
+
+Important:
+
+- Change only the applicable datatype references in the new procedure.
+- Verify that every referenced column exists in the main table.
+- Do not change actual DML table references.
+- Do not modify unrelated procedures.
+- Preserve the original parameter names, modes, and defaults.
+- Do not blindly replace "_q" references used for other purposes.
+
+3. Add two OUT parameters
+
+Mohan confirmed that Java will need to receive the processing status and error message.
+
+Add the following OUT parameters to the wrapper:
+
+- "p_success_flag OUT VARCHAR2"
+- "p_error_message OUT VARCHAR2"
+
+Before adding them, inspect existing package conventions and confirm the appropriate datatype declarations.
+
+Update both package specification and body consistently.
+
+Preserve all existing 277 IN parameters.
+
+The new wrapper should expose 277 IN parameters plus 2 OUT parameters, provided no other existing signature changes are required.
+
+4. Add customer existence and active-status validation
+
+Before invoking:
+
+"PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info"
+
+validate that the customer exists in "qlm_customer" for the supplied customer code and branch code, and is active.
+
+Mohan provided this exact reference logic:
+
+SELECT COUNT(1)
+INTO lv_customer_maintenance
+FROM qlm_customer
+WHERE branch_code = p_branch_code
+AND customer_code = p_customer_code
+AND active_flag = 1;
+
+IF lv_customer_maintenance = 0 THEN
+    p_success_flag := 'N';
+    p_error_message := lv_branch_desc || '/' || p_customer_code ||
+                       ' Customer is not maintained for the branch';
+    RETURN;
+END IF;
+
+Implement this logic in the wrapper.
+
+Requirements:
+
+- Declare "lv_customer_maintenance" with an appropriate datatype.
+- Confirm that "p_branch_code" and "p_customer_code" exist in the wrapper and use the correct values.
+- Confirm the actual "qlm_customer" table columns.
+- Use "active_flag = 1", as Mohan instructed.
+- Run this validation before invoking the existing edit procedure.
+- If no matching active customer exists, set the success flag to "N", populate the error message, and return immediately.
+- If the customer exists, continue to the existing procedure.
+
+The reference uses "lv_branch_desc". Check whether this variable is available in the wrapper. If not, find the existing project pattern for obtaining the branch description. Do not invent its value.
+
+If branch-description lookup is unnecessary or unavailable, explain the safest approach before making assumptions.
+
+5. Handle success and error output correctly
+
+The new OUT parameters must return meaningful results to the Java caller.
+
+Inspect the existing procedure's OUT parameters and determine how the existing processing success flag and error message are returned.
+
+Ensure:
+
+- Customer-validation failure returns "N" and the appropriate message.
+- Successful delegated processing returns the appropriate success status.
+- Delegated processing failures are not incorrectly reported as success.
+- Existing business errors are preserved where possible.
+- No business validation or CRUD logic is duplicated unnecessarily.
+
+Do not simply set "p_success_flag := 'Y'" after calling the existing procedure without checking its actual result.
+
+Follow existing project conventions for exception handling.
+
+6. Follow Mohan's formatting conventions
+
+Mohan explicitly requested:
+
+- SQL and PL/SQL keywords in uppercase ("SELECT", "FROM", "WHERE", "IF", "THEN", "END IF", "RETURN", etc.).
+- Table names and column names in lowercase.
+- Tab-based indentation and alignment.
+- Consistent parameter alignment.
+- Properly aligned "IF" and "END IF" blocks.
+- Consistent formatting with nearby existing procedures.
+
+Apply these conventions to the newly added or modified code.
+
+Avoid unrelated formatting changes throughout the large package.
+
+7. Preserve existing implementation
+
+Do not:
+
+- Remove any required IN parameters.
+- Change the existing procedure's business logic.
+- Modify "PKG_CUSTOMER_ADDL_INFO_MGMT".
+- Change unrelated procedures.
+- Add unnecessary database operations.
+- Modify unrelated files.
+- Commit, push, or deploy changes automatically.
+
+8. Perform verification
+
+After implementing the changes:
+
+1. Compare the wrapper's 277 IN parameters with the existing "prc_edit_customer_addl_info" IN parameters.
+2. Verify parameter names, modes, types, and defaults, accounting for the intentional switch from "_q" to the main table.
+3. Verify both new OUT parameters.
+4. Verify package specification and body signatures match.
+5. Verify that the customer check occurs before the delegate call.
+6. Verify that missing or inactive customers cannot reach the delegate call.
+7. Verify success and error output handling.
+8. Verify the existing delegate parameter mappings remain correct.
+9. Review the Git diff for unrelated changes.
+
+If authorized database access is available, use read-only metadata queries to verify table columns and parameter declarations.
+
+Do not execute data-changing procedures or compile/deploy changes automatically.
+
+Final report
+
+Provide:
+
+- Files modified
+- Change-history update
+- Main-table datatype references updated
+- Customer validation added
+- OUT parameters added
+- Success/error propagation behavior
+- Parameter verification results
+- Formatting verification
+- Any unresolved questions
+- Exact database compilation and validation steps for me to perform manually
+
+Important: Do not silently invent business rules or substitute guessed values. If a required detail cannot be established from existing code or Mohan's sample, identify the uncertainty and ask me before proceeding.
+
+
+---------
+
+
 Based on the Jira/task requirements and the repository code, help me understand the business/integration context of Jira 42566.
 
 Specifically find:
