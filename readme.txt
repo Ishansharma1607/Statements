@@ -1,3 +1,9 @@
+Hi Mohan, I've incorporated the review changes. One clarification: for unexpected exceptions, should I retain the existing "ROLLBACK" and "RAISE_APPLICATION_ERROR" pattern used by the other incoming static procedures, or should we return the success flag as "N" with the error message to Java?
+
+Also, for an invalid branch code, should we return the same way as the customer validation failure?
+
+
+--------
 Review the exception handling in "prc_mlv_customer_addl_info".
 
 Mohan requested "p_success_flag" and "p_error_message" OUT parameters so Java can read the result.
