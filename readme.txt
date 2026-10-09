@@ -1,3 +1,29 @@
+Mohan has confirmed the final error-handling requirements for Jira 42566.
+
+For unexpected exceptions, we must return "p_success_flag = 'N'" with an appropriate "p_error_message" to Java instead of raising an application error.
+
+For an invalid/missing branch code, we must use the same OUT-parameter error-return approach.
+
+Please update "PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info" accordingly.
+
+Requirements:
+
+1. Handle "NO_DATA_FOUND" from the "qlm_branch" lookup locally.
+2. For an invalid branch, set "p_success_flag := 'N'", populate a meaningful "p_error_message", and return normally.
+3. Preserve the existing customer existence/active-status validation.
+4. For unexpected exceptions, log the error using the existing project logging convention, set the OUT failure status and error message, and allow the wrapper to complete normally rather than calling "RAISE_APPLICATION_ERROR".
+5. Review "ROLLBACK" carefully. The requirement to return OUT parameters does not by itself determine transaction ownership. Inspect existing transaction patterns and identify whether wrapper-level rollback is appropriate. Do not remove or retain it based solely on assumptions; report any unresolved transaction concern.
+6. Preserve the existing delegate call and success/error OUT mappings.
+7. Preserve all 277 IN parameters and both OUT parameters.
+8. Follow Mohan's uppercase SQL keyword, lowercase table/column name, and TAB-alignment conventions.
+9. Modify only the relevant wrapper code, not unrelated procedures.
+
+After implementation, review the diff and verify all expected failure paths.
+
+Do not commit, push, execute business procedures, or deploy automatically. Provide the manual Oracle compilation steps and report any remaining uncertainty.
+
+
+------
 Hi Mohan, I've incorporated the review changes. One clarification: for unexpected exceptions, should I retain the existing "ROLLBACK" and "RAISE_APPLICATION_ERROR" pattern used by the other incoming static procedures, or should we return the success flag as "N" with the error message to Java?
 
 Also, for an invalid branch code, should we return the same way as the customer validation failure?
