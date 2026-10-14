@@ -1,3 +1,90 @@
+Please investigate the discrepancy between FX_CONFIRMN in the supplied XML and FX_CONFIRM mentioned in Jira C166472-43178.
+
+1. Search the entire repository for both FX_CONFIRMN and FX_CONFIRM, including enums, constants, DTOs, services, XML mappings, database scripts, and existing tests.
+2. Identify whether both values are supported or whether one is the canonical message-type value.
+3. Check whether any existing application logic transforms or normalizes these values.
+4. Verify that our current JAXB deserialization preserves the exact incoming XML value without modification.
+5. Check the supplied XML and Jira attachments to determine whether the discrepancy is documented.
+
+Do not modify any code yet.
+
+Provide your findings with file paths and relevant references. Clearly distinguish verified facts from assumptions.
+
+If the repository and attachments do not establish the correct value, mark it as requiring confirmation from Mohan.
+
+For now, preserve the exact value received in the XML.
+
+-----
+
+Perform a thorough final technical review of the XML POJO/deserialization implementation for Jira C166472-43178 (Customer Message Address).
+
+Review all changes made in the current implementation.
+
+1. XML contract validation:
+
+- Compare all JAXB field bindings against the actual supplied XML and mapping workbook.
+- Verify correct root element, nested elements, optional fields, and repeated message records.
+- Check exact XML tag names, capitalization, and data types.
+- Verify handling of empty and missing XML elements.
+- Include the findings from the FX_CONFIRMN vs FX_CONFIRM investigation.
+- Ensure message-type values are preserved exactly without unsupported normalization.
+
+2. Backward compatibility:
+
+- Verify that existing DTO consumers are not broken.
+- Check the existing CustomerMsgAddress, AddressDetails, and MessageDetails classes.
+- Ensure existing recordStatus and primaryAddress properties remain compatible.
+- Check whether the new Flexstatic root model is appropriate for the supplied XML.
+
+3. XML parser security:
+
+- Verify that DTD processing and external entity resolution are disabled.
+- Check protection against XXE attacks.
+- Verify resource handling and exception handling.
+- Ensure no unnecessary dependencies were introduced.
+
+4. Unit test coverage:
+
+- Verify that all three sample message records are correctly deserialized.
+- Check branch code, customer number, address fields, flags, and message types.
+- Test empty and missing optional elements.
+- Add or improve focused tests where important gaps exist.
+- Do not change business behavior based on assumptions.
+
+5. Build verification:
+
+- Run the relevant Gradle unit tests.
+- Run the module build if feasible.
+- Report actual commands, test results, and failures.
+
+6. Git changes:
+
+- Review the complete Git diff.
+- Identify unrelated modifications.
+- Do not overwrite the pre-existing application-DEV-DEV.properties change.
+- Verify that the sample XML is correctly placed under src/test/resources.
+- Ensure no sensitive customer data or credentials are introduced.
+
+7. Outstanding requirements:
+
+- Identify anything requiring confirmation from Mohan.
+- Clearly distinguish completed XML deserialization work from pending business mapping, MQ/JMS integration, and Oracle database integration.
+- Do not invent field mappings, constants, message values, or business rules.
+
+Fix only confirmed technical defects within the current XML POJO/deserialization scope. Do not implement MQ/JMS, Oracle database writes, or speculative business mapping.
+
+Do not commit or push any changes.
+
+At the end, provide:
+
+- Files changed
+- Issues found and fixed
+- Tests executed and results
+- Remaining unresolved questions
+- Whether the XML POJO/deserialization implementation is ready for code review
+- Recommended next implementation step
+
+-----
 We have completed the initial analysis of Jira C166472-43178, including the Java repository, customerMessageAddress.xml, and QFXLM_QFX_mapping_message_address_Ver2.xlsx.
 
 Mohan has explicitly instructed me:
