@@ -1,3 +1,13 @@
+Hi Mohan, I've completed the XML POJO changes and tested the deserialization. The relevant tests are passing.
+
+Just wanted to clarify a few things before raising the PR:
+
+1. The XML and mapping Excel have FX_CONFIRMN, but Jira mentions FX_CONFIRM. Should we follow the XML value?
+2. Should we keep the field names exactly as in the supplied XML (activeFlag, primaryAddressFlag, suppAmendCmsConfFlag)?
+3. Is flexstatic the expected root element for the incoming XML?
+
+I've currently kept everything as per the supplied XML.
+----
 Perform a comprehensive final code review of the implementation for Jira C166472-43178 — XML POJO for Customer Message Address.
 
 Review all changes against the Jira requirements, supplied customerMessageAddress.xml, QFXLM_QFX_mapping_message_address_Ver2.xlsx, and existing project architecture.
