@@ -1,3 +1,43 @@
+Perform a comprehensive final code review of the implementation for Jira C166472-43178 — XML POJO for Customer Message Address.
+
+Review all changes against the Jira requirements, supplied customerMessageAddress.xml, QFXLM_QFX_mapping_message_address_Ver2.xlsx, and existing project architecture.
+
+Verify the following:
+
+1. All XML elements and nested structures are correctly mapped to Java POJOs using JAXB annotations, including exact element names, case sensitivity, collections, optional fields, and empty values.
+2. Existing CustomerMsgAddress, AddressDetails, and MessageDetails models are reused correctly without breaking existing consumers.
+3. The new Flexstatic root POJO correctly represents the supplied XML structure.
+4. CustomerMessageAddressXmlReader correctly deserializes the XML, handles malformed inputs, and prevents XXE/external entity attacks.
+5. No unnecessary classes, duplicate models, dependencies, or unrelated modifications were introduced.
+6. XML fixtures are correctly placed under src/test/resources and are not accidentally included in production resources.
+7. The implementation remains within the Jira scope: POJO creation and XML deserialization only, without database, MQ, JMS, Oracle package, or business mapping changes.
+8. Preserve FX_CONFIRMN exactly as supplied in the XML and mapping workbook. Do not normalize it to FX_CONFIRM unless authoritative requirements explicitly demand that change.
+9. Review the discrepancies between activeFlag/recordStatus, primaryAddressFlag/primaryAddress, and suppAmendCmsConfFlag/suppAmendCmsFlag. Verify that the implementation preserves backward compatibility without inventing mappings.
+10. Check whether the new XML reader is actually usable through the intended application interface, rather than only working in isolated tests.
+11. Run the relevant Gradle compilation and tests, including existing tests potentially affected by the changes.
+12. Check all changed and untracked files for accidental modifications, generated files, formatting issues, and unnecessary additions.
+
+Important:
+
+- Do not assume successful tests mean the implementation fully satisfies the requirements.
+- Identify actual defects, compatibility risks, missing test cases, and unresolved business-contract ambiguities.
+- Fix confirmed code defects within scope, but do not invent business rules or change ambiguous XML values.
+- Do not modify unrelated files.
+- Do not commit or push anything.
+
+After reviewing, provide:
+
+- Files reviewed and modified
+- Issues found, classified as critical, major, minor, or informational
+- Fixes applied
+- Remaining questions requiring Mohan's confirmation
+- Exact Gradle commands executed and their results
+- Final assessment: READY FOR PR, READY WITH CLARIFICATIONS, or NOT READY
+
+Be strict and evidence-based. Do not claim something is verified unless you inspected the relevant code or executed the corresponding test.
+
+
+-----
 Please investigate the discrepancy between FX_CONFIRMN in the supplied XML and FX_CONFIRM mentioned in Jira C166472-43178.
 
 1. Search the entire repository for both FX_CONFIRMN and FX_CONFIRM, including enums, constants, DTOs, services, XML mappings, database scripts, and existing tests.
