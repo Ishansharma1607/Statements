@@ -1,3 +1,12 @@
+Hi Mohan, I've completed the XML POJO changes and the relevant tests are passing.
+
+Just wanted to confirm a few things:
+
+1. The XML has fields like activeFlag, primaryAddressFlag and suppAmendCmsConfFlag, while the existing DTOs use slightly different names. Should we follow the XML field names as provided?
+2. Is flexstatic the actual root element we'll receive from MLV, or is it just a wrapper in the sample XML?
+3. For this ticket, do we only need to create the POJOs and XML parsing, or should we also integrate the parsing into the existing incoming message flow?
+
+----
 Hi Mohan, I've completed the XML POJO changes and tested the deserialization. The relevant tests are passing.
 
 Just wanted to clarify a few things before raising the PR:
