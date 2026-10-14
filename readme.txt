@@ -1,4 +1,77 @@
+We have completed the initial analysis of Jira C166472-43178, including the Java repository, customerMessageAddress.xml, and QFXLM_QFX_mapping_message_address_Ver2.xlsx.
 
+Mohan has explicitly instructed me:
+
+"As part of Java changes, create an equivalent POJO for XML. Will explain other."
+
+I want to proceed with ONLY this first implementation step.
+
+TASK: Implement Java POJO classes for the supplied customerMessageAddress.xml and add XML deserialization unit tests.
+
+Requirements:
+
+1. Inspect the existing Java project for XML model/DTO classes, including CustomerMsgAddress, AddressDetails, MessageDetails, and any similar models.
+
+2. Reuse or extend existing classes where appropriate. Avoid introducing duplicate models unnecessarily.
+
+3. Treat the actual attached XML as the source of truth for XML element names.
+
+4. Support the complete hierarchy:
+   
+   - flexstatic root
+   - customerMessageAddress
+   - addressDetails
+   - messageDetails
+   - Repeated messageMappingEntry elements
+
+5. Include every field from the sample XML, including optional and empty elements.
+
+6. Preserve the exact XML element names using the appropriate annotations.
+
+7. Where existing DTOs use recordStatus or primaryAddress, but the supplied XML uses activeFlag or primaryAddressFlag, implement correct XML binding without breaking existing consumers.
+
+8. Handle repeated messageMappingEntry elements as a collection, preserving their order and values.
+
+9. Use the XML library and POJO conventions already present in the repository, preferably reusing the existing dependencies rather than adding a new framework.
+
+10. Keep customer identifiers and branch codes as Strings. Do not convert IE6 to a numeric branch code at this stage.
+
+11. Add unit tests using the supplied XML fixture. Verify:
+    
+    - XML successfully deserializes
+    - Branch code is IE6
+    - Customer and address fields are populated
+    - All three messageMappingEntry records are present
+    - FX_AMENDMENT, FX_CONFIRM and FX_REVERSAL are correctly parsed
+    - Optional and empty XML elements are handled safely
+    - Existing DTO consumers/tests are not broken
+
+12. Ensure secure XML parser configuration, including disabling external entity resolution and external DTD access.
+
+Restrictions:
+
+- Do not implement database insertion or stored procedure calls.
+- Do not modify MQ listeners or JMS configuration.
+- Do not modify Oracle packages.
+- Do not implement business mappings or branch conversion yet.
+- Do not invent XML fields or business rules.
+- Do not modify unrelated files.
+- Do not commit or push changes.
+
+First identify whether the existing XML model is reusable. Then implement the minimal POJO/deserialization changes and run relevant unit tests.
+
+Finally, report:
+
+- Java classes created or modified
+- XML library used
+- Test results
+- Any compatibility issues
+- Outstanding questions for Mohan
+
+Proceed with this scoped implementation.
+
+
+-----
 
 
 Hi Mohan, I've cloned the repo and started going through the existing flow for Jira 43178.Hi Mohan, I just noticed the XML sample and mapping Excel attached to the Jira. I'll go through those and continue with the implementation analysis.
