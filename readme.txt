@@ -1,3 +1,16 @@
+Hi Mohan, I've cloned the repo and started going through the existing flow for Jira 43178.
+
+Do we have a sample MLV XML and field mapping for the customer message address tables?
+
+Also, I noticed that PKG_QLM_INCOMING_STATIC_MSG and PKG_CUST_MSG_ADDR_MGMT package bodies are showing INVALID in DEV. Could you please check if this is expected?
+
+I'll continue looking into the Java flow in the meantime.
+
+
+------
+
+
+
 Mohan has confirmed the final error-handling requirements for Jira 42566.
 
 For unexpected exceptions, we must return "p_success_flag = 'N'" with an appropriate "p_error_message" to Java instead of raising an application error.
