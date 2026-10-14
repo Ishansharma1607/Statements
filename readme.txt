@@ -1,4 +1,11 @@
-Hi Mohan, I've cloned the repo and started going through the existing flow for Jira 43178.
+
+
+
+Hi Mohan, I've cloned the repo and started going through the existing flow for Jira 43178.Hi Mohan, I just noticed the XML sample and mapping Excel attached to the Jira. I'll go through those and continue with the implementation analysis.
+
+The package INVALID status in DEV is the only concern I found so far.
+
+----
 
 Do we have a sample MLV XML and field mapping for the customer message address tables?
 
