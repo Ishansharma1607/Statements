@@ -1,3 +1,230 @@
+QFXLM — Resolve DEV Startup and Complete End-to-End Testing
+
+Continue Jira C166472-43178 from the latest execution report.
+
+MAIN GOAL: Get the complete DEV flow working:
+
+MQ Demo Producer → DEV MQ → MLVStaticReceiver → MLVProcessor → Customer Message Address JAXB parsing → IncomingStaticMessageStagingDao → Oracle staging tables.
+
+Mohan has explicitly approved DEV testing, including XML parsing and DB staging.
+
+Approved environment: DEV only.
+
+Exact approved MQ queue:
+"QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01"
+
+Do not repeat earlier investigations unnecessarily. Prioritize fixing blockers and executing the test.
+
+1. Expanded permissions
+
+You have my permission to:
+
+- Freely modify the locally cloned MQ demo repository to make DEV testing work.
+- Change its Java producer implementation, configuration loading, launcher scripts, and build configuration as needed.
+- Create DEV-specific local configuration files.
+- Fix the MQ demo's incorrect handling of "mq_config.properties" as a message payload.
+- Make minimal necessary local/DEV-only changes in the main QFXLM Java repository.
+- Modify local run configurations, JVM arguments, and property-loading arrangements.
+- Build, run, debug, and test both applications.
+- Perform approved DEV MQ publishing and Oracle staging tests.
+- Use the existing authorized DEV Oracle connection and read-only diagnostic queries.
+- Diagnose and fix local implementation issues without asking permission for every change.
+
+These local changes do not need to be committed.
+
+However:
+
+- Do not change SIT or production configuration.
+- Do not modify Oracle schema objects or shared MQ infrastructure.
+- Do not commit or push changes.
+- Do not bypass authentication or security controls.
+- Never hardcode, print, persist, or expose credentials.
+- Keep any local secret configuration outside Git and use the organization's approved credential mechanism.
+- Avoid interfering with existing shared consumers or other developers' tests.
+
+2. Highest priority — fix ORA-01017
+
+The latest investigation confirmed:
+
+- Direct Oracle JDBC connection succeeds.
+- "OracleConnectionPoolDataSource.getPooledConnection()" succeeds independently.
+- DEV Oracle package and types are VALID.
+- Main application still fails during "StaticDatasource.init()" with ORA-01017.
+- The listener cannot initialize until application startup succeeds.
+
+The suspected failure is in the legacy Spring property/password handoff.
+
+Investigate:
+
+- "spring-qas.properties"
+- "spring-qas.xml"
+- "PropertySourcesPlaceholderConfigurer"
+- "CommonUtil.getEncryptedDBPwd()"
+- "StaticDatasource.init()"
+- "DB_PASS=${DB_PASS}"
+- JVM system properties
+- Environment variable precedence
+- Spring bean initialization and property resolution
+
+Compare the successful standalone JDBC configuration with the failing main application runtime.
+
+Do not stop at identifying a possible root cause.
+
+Where the cause is verified, implement a minimal local/DEV-only correction and retry startup.
+
+You may create a temporary, untracked DEV launch configuration or local-only Spring property override if necessary, using the existing authorized credential source.
+
+Ensure the actual application receives the intended credential without disclosing or logging its value.
+
+Do not globally replace the existing enterprise secret-loading mechanism unless its contract and impact are understood.
+
+If an approved secret source is genuinely unavailable, identify the precise external requirement rather than repeatedly attempting the same failing launch.
+
+3. Modify the demo repository as necessary
+
+The demo is specifically for local MQ testing. You may make substantial local changes to it if needed.
+
+Requirements:
+
+1. Support DEV MQ configuration.
+2. Target the exact approved queue.
+3. Use approved DEV host, port, queue manager, channel, and authentication settings.
+4. Accept the XML file as a payload.
+5. Publish only the XML, not the configuration file.
+6. Support a clean command or launcher script for DEV testing.
+7. Provide useful connection, publishing, and error diagnostics without exposing secrets.
+8. Verify the generated JAR works.
+
+You may introduce new local DEV-specific classes, scripts, or configuration files if that simplifies testing.
+
+Do not change the main application's already-correct DEV queue value unnecessarily.
+
+4. Complete the main application startup
+
+Once the datasource issue is corrected:
+
+- Start the application in the DEV testing configuration.
+- Confirm Spring context initialization succeeds.
+- Confirm MLVStaticReceiver is initialized.
+- Confirm the listener is connected to the approved DEV MQ queue.
+- Confirm the intended test consumer is ready before publishing.
+
+If other startup issues appear, investigate and fix them within the local/DEV scope.
+
+Avoid changing unrelated shared application components.
+
+5. Independently resolve staging metadata
+
+Use all available sources:
+
+- Java repository
+- Database repository
+- DEV Oracle database
+- Existing staging records
+- SQL packages
+- Configuration/lookup tables
+- Sample XML
+- Existing application constants and conventions
+
+Find authoritative values for:
+
+- STATIC_TYPE
+- FO_BRANCH_CODE
+- IN_OR_OUT
+- MSG_STATUS
+- SOURCE_SYSTEM
+- Optional customer code/account mappings
+
+Distinguish confirmed values from assumptions.
+
+Do not invent business values.
+
+Only request Mohan's clarification if these cannot be established reliably from the available evidence.
+
+6. Execute DEV testing
+
+Phase A — Build and local verification
+
+Build both projects and run all relevant tests.
+
+Correct any local implementation issues.
+
+Phase B — DEV MQ and XML parsing
+
+Once the main application listener is ready:
+
+1. Use the modified demo producer.
+2. Publish the sample Customer Message Address XML to the exact approved DEV queue.
+3. Verify successful MQ publication.
+4. Verify MLVStaticReceiver consumes the message.
+5. Verify MLVProcessor executes.
+6. Verify JAXB parsing succeeds.
+7. Confirm the expected Customer Message Address values.
+
+Use staging disabled initially if needed to isolate MQ/parsing functionality.
+
+Phase C — DEV Oracle staging
+
+Once approved metadata and working DEV application configuration are available:
+
+1. Enable staging using a local/DEV-only configuration.
+2. Publish a controlled Customer Message Address test message.
+3. Verify the common staging DAO is invoked.
+4. Verify execution of "PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg".
+5. Verify success/error OUT parameters.
+6. Verify header insertion in "QLM_INCOMING_STATIC_MSG".
+7. Verify ordered XML fragments in "QLM_INCOMING_STATIC_MSG_DTLS".
+8. Reconstruct the XML and compare it with the original message.
+
+Use a reliable method to identify the test records. Do not assume the latest database row belongs to this test.
+
+Do not repeatedly publish duplicate messages unnecessarily.
+
+7. Preserve existing implementation behavior
+
+Do not break Mohan's confirmed architecture:
+
+- Dedicated Customer Message Address JAXB POJOs.
+- Reuse Karthik's shared Flexstatic.
+- Preserve Customer Additional Info support.
+- Do not change existing shared AddressDetails or MessageDetails for this requirement.
+- Use the existing reusable staging DAO and XML chunker.
+- Preserve the corrected synchronous completion/error propagation behavior in the MLV listener.
+- No final business-table persistence in this phase.
+
+Preserve the existing unrelated AddressDetails.java working-tree modification.
+
+8. Execution approach
+
+Work autonomously and incrementally.
+
+- Fix confirmed issues.
+- Run the relevant tests.
+- Continue to the next step.
+- Avoid repeatedly generating lengthy investigation reports.
+- Do not repeat checks already proven unless a subsequent change requires revalidation.
+- Do not claim anything passed without actually executing and verifying it.
+
+If a genuine external blocker remains, explain exactly what is missing and continue independent work.
+
+9. Final report
+
+Keep the final response short:
+
+1. Application startup: PASS/FAIL
+2. Root cause and correction for ORA-01017
+3. MLV listener initialized: YES/NO
+4. MQ demo configuration: READY/NOT READY
+5. DEV MQ publishing: PASS/FAIL/NOT RUN
+6. XML parsing through MQ: PASS/FAIL/NOT RUN
+7. Oracle staging: PASS/FAIL/BLOCKED
+8. Staging rows verified: YES/NO
+9. Files changed
+10. Only remaining genuine blockers
+
+Do not stop after producing another analysis report. Make the authorized local changes, execute tests, and work toward successful DEV end-to-end validation.
+-------
+
 Continue from the latest execution report.
 
 We have repeatedly confirmed that the standalone DEV Oracle pooled connection succeeds, while the main application fails with ORA-01017 during StaticDatasource.init().
