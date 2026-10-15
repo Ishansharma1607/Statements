@@ -1,3 +1,42 @@
+Continue in this existing Copilot session for Jira C166472-43178.
+
+Mohan has provided an MQ demo repository, which I have already cloned locally. I have also created a skill documenting this repository.
+
+Use the MQ demo repository and its skill as additional context. Keep the QFXLM Java repository as the PRIMARY implementation target.
+
+This is a READ-ONLY investigation. Do not modify any files, publish messages, execute the demo JAR, commit, push, or deploy.
+
+Tasks:
+
+1. Inspect the MQ demo repository and associated skill. Identify exactly how to build its JAR and publish our sample customerMessageAddress.xml to the approved local/test MQ queue.
+
+2. Inspect QFXLMExecutorService, MLVStaticReceiver, MLVProcessor, and the relevant JMS configuration in the main Java repository.
+
+3. Determine whether the listener returns before asynchronous XML processing/staging completes and how worker failures are propagated.
+
+4. Check whether MQ acknowledgement, retry, and redelivery behavior can be verified from the available configuration. Clearly identify anything controlled by external infrastructure.
+
+5. Provide an exact step-by-step LOCAL MQ test plan:
+   
+   - Build and launch the main QFXLM application.
+   - Build and run the demo MQ producer JAR.
+   - Publish the existing Customer Message Address sample XML.
+   - Verify receipt by MLVStaticReceiver.
+   - Verify successful JAXB parsing by MLVProcessor.
+   - Verify expected behavior with staging disabled.
+
+6. Explain how to perform a later MQ-to-Oracle staging integration test once the database package and approved metadata values are available.
+
+7. Identify any essential fixes before local testing, especially asynchronous error handling. Do not implement them yet.
+
+8. Preserve all existing work and leave the unrelated AddressDetails.java modification untouched.
+
+If the MQ repository or skill is inaccessible, explain exactly what additional context you need.
+
+Return a concise testing plan with verified commands, expected outputs, prerequisites, and blockers. Do not repeat the previous implementation investigation.
+
+---------
+
 Please perform a final READ-ONLY code review of your completed implementation for Jira C166472-43178.
 
 Do not modify any files yet.
