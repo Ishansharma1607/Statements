@@ -1,3 +1,8 @@
+Sure, I can share my Virtusa manager's contact. Just to confirm, would my reporting manager be the right POC, or do you need someone specifically from Virtusa HR/staffing?
+
+---
+
+
 QFXLM — Resolve DEV Startup and Complete End-to-End Testing
 
 Continue Jira C166472-43178 from the latest execution report.
