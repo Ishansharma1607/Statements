@@ -1,3 +1,497 @@
+QFXLM C166472-43178 — Complete Implementation, DEV MQ Testing and Oracle Staging Verification
+
+1. Objective
+
+Continue the existing implementation of Jira C166472-43178: QFXLM MM Customer Message Address XML from MLV.
+
+Do not start development from scratch or repeat previous broad investigations.
+
+The Java implementation has already been created, and its unit tests previously passed. Your task is to finish any necessary corrections and execute the authorized DEV end-to-end integration test.
+
+Target flow:
+
+Customer Message Address XML
+→ MQ Demo Producer
+→ DEV IBM MQ Queue
+→ MLVStaticReceiver
+→ MLVProcessor
+→ JAXB XML-to-POJO Conversion
+→ IncomingStaticMessageStagingDao
+→ PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg
+→ QLM_INCOMING_STATIC_MSG
+→ QLM_INCOMING_STATIC_MSG_DTLS
+
+The goal is to prove that the actual XML message is successfully received, parsed, and stored in both Oracle staging tables.
+
+2. Mohan's confirmed instructions — authoritative
+
+Mohan has explicitly confirmed:
+
+Environment: DEV only, NOT SIT.
+
+Exact approved MQ queue:
+"QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01"
+
+Testing scope: Both XML parsing AND DB staging.
+
+Demo repository: Use the MQ demo repository Mohan provided to publish test XML.
+
+These instructions supersede earlier assumptions and recommendations.
+
+Critical queue-name correction
+
+Your previous investigation incorrectly recorded the approved queue as:
+
+"QFXLM.PORTAL.TO_QFXSTATIC.INTERNAL_01"
+
+That is WRONG.
+
+The correct queue is:
+
+"QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01"
+
+Notice the underscore between PORTAL and TO.
+
+The main application's existing DEV listener configuration appears to already contain the correct queue name.
+
+Before changing anything:
+
+1. Compare the exact approved queue against "application-DEV-DEV.properties".
+2. If they match, preserve the existing listener configuration.
+3. Remove the false queue-name mismatch from your outstanding blockers.
+4. Ensure the demo producer publishes to the same approved queue.
+
+Do not change working listener configuration unnecessarily.
+
+3. Repositories and context
+
+You have access to:
+
+Primary Java repository
+
+- Existing QFXLM static-interface Java project.
+- Current local implementation changes.
+- JAXB classes, listener, processor, DAO, XML chunker, Spring configuration, and tests.
+
+MQ Demo repository
+
+- Mohan's cloned "180228.Demo" project.
+- Its README, Maven build, Java sender, configuration, and scripts.
+
+MQ Demo skill
+
+- Existing local skill documenting the repository and its usage.
+
+Database repository
+
+- QFXLM database source definitions.
+- Existing incoming static message package, tables, and Oracle collection types.
+
+Use the previous investigation and code-review findings as context, but validate critical details against the current code.
+
+Preserve the existing working tree and unrelated user changes.
+
+4. Authorization — execute the DEV test
+
+Mohan has already approved testing in DEV using the specified queue, including XML parsing and DB staging.
+
+You are authorized to:
+
+- Inspect the three repositories.
+- Modify local Java implementation code when necessary.
+- Modify the local MQ demo producer/configuration for DEV testing.
+- Create local or externally supplied DEV configuration files.
+- Build both Java projects.
+- Run relevant unit and integration tests.
+- Use existing authorized DEV MQ and Oracle connections.
+- Start the application in the approved DEV testing configuration.
+- Publish the provided Customer Message Address XML test payload to the exact approved DEV queue.
+- Invoke the existing Oracle staging procedure through the Java DAO.
+- Verify staging inserts with read-only SQL queries.
+- Fix local implementation defects and perform controlled retests.
+
+Do not repeatedly ask for approval for ordinary DEV testing that Mohan has already authorized.
+
+Restrictions:
+
+- Do not connect to SIT or production.
+- Do not publish to any queue other than the exact approved DEV queue.
+- Do not modify or deploy Oracle database packages, procedures, tables, or infrastructure.
+- Do not change shared MQ configuration or queue permissions.
+- Do not stop or restart other developers' services.
+- Do not start a competing consumer unless it is safe and consistent with the approved DEV test setup.
+- Do not commit or push code.
+- Do not expose credentials, passwords, tokens, certificates, or other secrets.
+- Use only approved, non-sensitive test XML.
+- Avoid unnecessary repeated message publication, and identify each controlled test run to prevent confusion.
+
+If a required action falls outside Mohan's confirmed DEV test scope or could disrupt a shared service, stop that specific action and explain the blocker.
+
+5. Preserve the implementation design from Mohan's meeting
+
+The following requirements are already confirmed.
+
+JAXB / POJOs
+
+- Create and use dedicated Customer Message Address POJOs.
+- Do not modify existing shared "AddressDetails.java" or "MessageDetails.java" for this requirement.
+- Reuse Karthik's merged "Flexstatic.java" under "common.dto.incoming".
+- Preserve "customerAdditionalInfo".
+- Support "customerMessageAddress".
+- Do not recreate the duplicate Copilot-generated "Flexstatic.java".
+- Use the existing "CommonXMLToPojoConverter".
+
+Common DAO
+
+Use ONE reusable staging DAO:
+
+"IncomingStaticMessageStagingDao.java"
+
+It must invoke:
+
+"PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg"
+
+It must support multiple MLV message types rather than hardcoding Customer Message Address business logic.
+
+Oracle XML fragmentation
+
+Use the existing "IncomingStaticXmlChunker".
+
+Ensure:
+
+- Exact XML content is preserved.
+- XML fragments remain in order.
+- Oracle "VARCHAR2(4000 CHAR)" restrictions are respected.
+- Unicode/supplementary characters are handled correctly.
+- Oracle record and collection types are bound correctly.
+- Procedure success/error outputs are checked.
+
+Final business tables
+
+Do not add final-table persistence without additional confirmation.
+
+The current testing scope is the common incoming static-message staging procedure.
+
+6. Initial review of current implementation
+
+Before making edits, inspect the current Git diff.
+
+Verify these existing components:
+
+- "MLVStaticReceiver.java"
+- "MLVProcessor.java"
+- "Flexstatic.java"
+- Customer Message Address POJOs
+- "CustomerMessageAddressXmlReader.java"
+- "IncomingStaticMessageStagingDao.java"
+- "IncomingStaticMessageMetadata.java"
+- "MlvIncomingStaticMetadataProvider.java"
+- "IncomingStaticXmlChunker.java"
+- "StaticServiceConfiguration.java"
+- "spring-qas.xml"
+- Relevant DEV properties
+- Existing unit tests
+
+Preserve unrelated modifications, especially the pre-existing "AddressDetails.java" change.
+
+Make only necessary corrections.
+
+7. Configure the MQ demo producer for DEV
+
+Inspect:
+
+- "MqMessageSender.java"
+- "pom.xml"
+- "mq_config.properties"
+- "run.bat"
+- The MQ demo skill
+
+The previous investigation established that:
+
+1. The demo uses Maven.
+2. It creates an executable MQ sender JAR.
+3. Its active configuration currently targets SIT.
+4. The sample XML can be provided as a file path.
+5. "run.bat" may incorrectly send the configuration file as a message because the sender treats command-line arguments as payload paths.
+
+Correct these issues as necessary.
+
+Requirements:
+
+- Support explicit DEV configuration.
+- Target the approved MQ endpoint and exact queue.
+- Use the correct DEV host, port, queue manager, and channel.
+- Reuse approved authentication and TLS settings.
+- Do not invent connection details or credentials.
+- Do not hardcode secrets.
+- Prefer local, untracked DEV test configuration instead of modifying shared SIT configuration.
+- Publish the sample XML as ONE text message.
+- Ensure the XML file is read correctly.
+- Prevent the configuration properties file from being sent as an unintended message.
+- Use the direct Java sender invocation if appropriate.
+
+Build the demo JAR and verify the expected artifact exists.
+
+8. Verify the main DEV application setup
+
+Inspect the existing DEV configuration.
+
+Verify:
+
+- MQ host and port.
+- Queue manager.
+- MQ channel.
+- Exact receive queue.
+- MLV listener enablement.
+- JMS listener container.
+- QLM Oracle datasource.
+- Staging configuration.
+- External runtime properties.
+
+The main application's MQ queue must match:
+
+"QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01"
+
+Avoid unnecessary changes if the current DEV configuration is already correct.
+
+Determine whether a separate DEV application instance should be started for testing or whether an existing authorized instance should consume the message.
+
+Do not accidentally create competing consumers or consume messages intended for another running test.
+
+9. Recheck DEV Oracle staging readiness
+
+Previously, an authorized read-only DEV investigation reported:
+
+- "PKG_QLM_INCOMING_STATIC_MSG" specification: VALID.
+- Package body: INVALID.
+- Error: "PLS-00201", involving "PRC_AUTH_CONF_PARTY_BIC".
+
+This is historical evidence, not a fresh verification.
+
+Using the available authorized DEV connection, perform read-only checks for:
+
+1. Current package specification and body status.
+2. Current compilation errors.
+3. Actual deployed procedure signature.
+4. Oracle record and collection types.
+5. Required EXECUTE privileges for the application database user.
+6. Staging table availability.
+7. Database compatibility with the Java DAO.
+
+Do not modify or recompile Oracle objects automatically.
+
+If the package body remains INVALID, identify the exact issue for Mohan/DB support. Do not fabricate a workaround or claim the database staging test passed.
+
+10. Resolve staging metadata configuration
+
+The existing staging implementation defaults to:
+
+"mlv.staging.enabled=false"
+
+Mohan has now explicitly asked us to test DB staging as well.
+
+Inspect the application configuration and determine the required values for:
+
+- "mlv.staging.customer-additional-info.static-type"
+- "mlv.staging.customer-message-address.static-type"
+- "mlv.staging.fo-branch-code"
+- "mlv.staging.in-or-out"
+- "mlv.staging.message-status"
+- "mlv.staging.source-system"
+
+Determine whether correct values are available from approved DEV configuration, existing database reference data, or established project conventions.
+
+Use only verified values.
+
+Do not invent values simply to make staging pass.
+
+Also examine whether the XML's branchCode/customerNumber should populate the optional Oracle procedure parameters.
+
+Verify whether the DAO should use the application timestamp or the Oracle default timestamp.
+
+If any required business value is genuinely unavailable, list exactly what Mohan must confirm. Continue with independent testing tasks instead of stopping everything.
+
+11. Review and correct asynchronous failure handling
+
+The previous investigation confirmed:
+
+"QFXLMExecutorService" extends "ThreadPoolExecutor".
+
+The MLV listener currently submits the processing task asynchronously and can return before XML parsing and DB staging complete.
+
+The shared MQ connector configures a transacted JMS session.
+
+Therefore, a later worker failure may not cause the JMS listener transaction to roll back.
+
+This is a genuine issue.
+
+Tasks:
+
+1. Inspect current executor behavior and JMS configuration.
+2. Determine whether the existing pattern provides an approved way to await processing completion.
+3. Assess the effect of making MLV processing synchronous or awaiting a Future.
+4. Avoid changing the shared executor globally.
+5. Implement the smallest safe MLV-specific correction if it can be established without changing unrelated consumers.
+6. Add tests for success and failure propagation.
+
+Do not claim guaranteed message redelivery unless verified from actual MQ/JMS behavior.
+
+For normal successful-path testing, distinguish a successful XML parse from a successfully completed Oracle staging transaction.
+
+Do not publish deliberately malformed messages or run failure/redelivery tests on shared DEV MQ without a verified, safe failure-handling arrangement.
+
+12. Execute the tests in phases
+
+Phase A — Build and unit testing
+
+Build the QFXLM Java project and MQ demo JAR.
+
+Run:
+
+- Customer Message Address JAXB tests.
+- Existing Customer Additional Info compatibility tests.
+- XML chunking tests.
+- DAO binding tests.
+- MLV processor tests.
+- JMS listener tests.
+
+Fix local compilation or implementation errors and rerun the relevant tests.
+
+Record actual results.
+
+Phase B — DEV MQ publishing and XML parsing
+
+Using the approved DEV configuration:
+
+1. Start or use the authorized application listener.
+2. Confirm that the listener points to the exact approved queue.
+3. Keep staging disabled for this initial isolated parsing check.
+4. Publish the existing Customer Message Address XML from the demo producer.
+5. Verify MQ publication succeeded.
+6. Verify the message was consumed by the intended MLV listener.
+7. Verify JAXB deserialization succeeded.
+8. Verify Customer Message Address was recognized.
+9. Confirm the expected processing logs.
+10. Confirm the message wasn't routed to an unrelated consumer.
+
+Expected parsing log:
+
+"CustomerMessageAddress XML parsed"
+
+Do not confuse successful publishing with successful consumption.
+
+Phase C — DEV Oracle staging
+
+Proceed when the existing Oracle package is valid, required privileges exist, staging metadata is approved, and the test can be executed safely.
+
+1. Enable "mlv.staging.enabled=true" using approved DEV configuration.
+2. Supply verified staging metadata.
+3. Start the authorized application flow.
+4. Publish a controlled Customer Message Address XML test message.
+5. Verify the listener consumes the message.
+6. Verify the XML is parsed.
+7. Verify "IncomingStaticMessageStagingDao" is called.
+8. Verify Oracle procedure execution.
+9. Verify "p_success_flag='Y'" and no reported staging error.
+10. Verify the transaction commits.
+11. Query "QLM_INCOMING_STATIC_MSG".
+12. Query "QLM_INCOMING_STATIC_MSG_DTLS".
+13. Verify the correct header and ordered XML fragments.
+14. Reconstruct and compare the stored XML against the original test payload.
+15. Record evidence of the actual execution.
+
+Use approved read-only verification queries for the tables.
+
+Because the procedure does not return "STATIC_MSG_CODE", identify the test's inserted records using an approved, reliable correlation method. Do not assume the newest database row necessarily belongs to this test.
+
+If Oracle staging fails, diagnose the specific error. Do not repeatedly publish the same message without understanding the failure.
+
+Phase D — Final validation
+
+Once the successful-path DEV test is complete:
+
+- Confirm XML parsing and staging both succeeded.
+- Confirm existing Customer Additional Info functionality remains unaffected.
+- Review the final Git diff.
+- Identify unrelated changes that must be excluded from the commit.
+- Confirm no accidental changes were made to SIT, production, or database packages.
+- State whether further message-specific business-table processing is pending.
+
+13. How to handle blockers
+
+Do not stop after producing another long investigation report.
+
+For each problem:
+
+1. Determine the actual cause.
+2. Fix it if it is within the authorized local implementation scope.
+3. Retest the relevant component.
+4. Continue with independent work.
+
+Only stop the affected operation when blocked by:
+
+- Missing approved DEV connection details.
+- Missing authentication or permissions.
+- Invalid Oracle package requiring DB-owner intervention.
+- Unavailable approved business metadata.
+- Unresolved risk of disrupting shared MQ consumers.
+- An infrastructure change beyond our authorized scope.
+
+Do not bypass security controls, change infrastructure permissions, or invent configuration values.
+
+14. Final report
+
+After executing everything possible, provide a concise report containing:
+
+A. Implementation
+
+- Files modified or created.
+- Issues fixed.
+- Any remaining code concerns.
+
+B. Build and tests
+
+- Java build result.
+- Demo JAR build result.
+- Unit-test results.
+- Integration-test results.
+
+C. DEV MQ
+
+- Exact queue used.
+- Publication result.
+- Consumption result.
+- JAXB parsing result.
+
+D. DEV Oracle
+
+- Package validity.
+- Procedure invocation result.
+- Success/error outputs.
+- Header insert verification.
+- Detail insert verification.
+- XML reconstruction result.
+
+E. Blockers
+
+- Exact unresolved issues.
+- Whether each requires Copilot, me, Mohan, or the DB/environment team.
+
+F. Final assessment
+
+- IMPLEMENTED
+- LOCALLY TESTED
+- DEV MQ VERIFIED
+- DEV ORACLE STAGING VERIFIED
+- END-TO-END PASSED or BLOCKED
+
+Do not claim success for any operation that was not actually executed and verified.
+
+The priority is to complete the real DEV XML → MQ → Java → Oracle staging test, not generate another theoretical report.
+
+Proceed now with the authorized implementation, DEV setup, building, testing, and verification.
+_+_-&-&-&-
+
 Mohan has confirmed the following for local end-to-end testing:
 
 - Environment: DEV only, NOT SIT.
