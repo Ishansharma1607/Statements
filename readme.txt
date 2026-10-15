@@ -1,3 +1,33 @@
+Mohan has confirmed the following for local end-to-end testing:
+
+- Environment: DEV only, NOT SIT.
+- MQ queue: QFXLM.PORTAL.TO_QFXSTATIC.INTERNAL_01
+- Scope: XML parsing AND Oracle DB staging.
+
+Please update the previous investigation using these confirmed details.
+
+1. Verify how the demo MQ sender should publish to this exact queue using DEV configuration.
+2. Verify that the main application's DEV MLV listener is configured to consume from the same queue.
+3. Check whether the DEV MQ host, channel, queue manager, authentication and TLS settings are available and consistent across both repositories.
+4. Recheck the Oracle DEV staging procedure's known invalid-package issue. If a read-only DB connection is available and authorized, check the actual package status and compilation errors. Do not modify or compile database objects.
+5. Check that the Java staging DAO is enabled/configured correctly and its procedure parameters match the DB package specification.
+6. Identify all remaining blockers for a successful MQ → XML parsing → DB staging test.
+7. Provide the exact safe execution sequence, commands, expected logs, and read-only verification queries.
+
+Important:
+
+- Do not assume DEV works merely because Mohan approved it.
+- Do not modify code or configuration yet.
+- Do not publish MQ messages, start services, or execute database writes.
+- Do not expose passwords or other credentials in the report.
+- Separate VERIFIED facts from UNTESTED assumptions.
+- Ask for approval before any live test.
+
+End with a short GO/NO-GO assessment and the minimum steps required to begin testing.
+
+------
+
+
 Hi Mohan, I checked the MQ demo repo and the current MLV configuration for local testing. DEV looks like the better option since the MLV receive queue is configured there, while SIT has some queue/channel mismatches.
 
 Can we use the DEV MQ setup for testing with the demo repo? Also, could you confirm which queue we should publish to and whether we should initially test only XML parsing or include DB staging as well?
