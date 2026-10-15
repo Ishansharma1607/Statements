@@ -1,3 +1,14 @@
+Hi Mohan, I've completed the Customer Message Address XML parsing and common staging DAO implementation. The build and unit tests are passing.
+
+While doing DEV integration testing, I need two clarifications:
+
+1. What values should we use for STATIC_TYPE, IN_OR_OUT, MSG_STATUS and SOURCE_SYSTEM for Customer Message Address staging?
+
+2. The application is starting successfully, but the DEV MQ connection is failing with 2035 (NOT_AUTHORIZED). Could you please let me know whom I should contact for MQ access?
+
+Once these are clarified, I can proceed with end-to-end testing.
+-----Ishan
+
 Create persistent, local-only GitHub Copilot workspace instructions for the QFXLM Java project.
 
 Purpose: Future fresh Copilot Agent sessions must automatically understand how to build, run, debug and test this project locally without repeating our earlier Oracle/Spring/MQ investigations.
