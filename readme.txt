@@ -1,3 +1,43 @@
+Before starting, please note these updates:
+
+1. Karthik's changes have now been merged into the current branch.
+2. One file you previously created was reverted. Please inspect the current Git working tree and repository state to identify what actually exists. Do not assume all your earlier changes are still present.
+3. Our next requirement is to investigate how the incoming Customer Message Address XML should be captured in the staging tables, as Mohan confirmed.
+4. For now, DO NOT modify, recreate, or restore any files. Only investigate the current architecture and propose the minimum required changes.
+
+Please use the current repository as the source of truth, not our earlier conversation.
+
+Investigate the existing QFXLM static XML ingestion and database staging architecture. Do not modify any files yet.
+
+Context:
+
+- Jira C166472-43178: Customer Message Address XML from MLV.
+- MLVStaticReceiver receives XML through MLV_RECEIVE_QUEUE but currently only logs it.
+- Karthik's merged MLVProcessor handles customerAdditionalInfo XML deserialization.
+- My CustomerMessageAddressXmlReader handles customerMessageAddress XML deserialization.
+- Mohan confirmed that flexstatic is the XML root and that incoming XML must be captured in the staging tables.
+- Jira mentions QLM_INCOMING_STATIC_MSG and QLM_INCOMING_STATIC_MSG_DTLS.
+- Searching for the exact table name QLM_INCOMING_STATIC_MSG in the current project returned no results.
+
+Please investigate:
+
+1. Trace the full flow from MLVStaticReceiver and identify any existing processing, routing, or persistence components.
+2. Search the entire repository for similar incoming XML staging implementations, including different table names, stored procedures, DAO classes, and JDBC patterns.
+3. Identify whether any reusable staging mechanism already exists.
+4. Determine how customerAdditionalInfo and customerMessageAddress XML should be distinguished and routed without breaking existing functionality.
+5. Identify the minimum code changes needed to capture the raw incoming XML in the staging tables.
+6. List any missing information, such as stored procedure signatures, table columns, or message metadata, that must be confirmed before implementation.
+
+Important:
+
+- Do not implement anything.
+- Do not invent stored procedure names, database columns, or XML routing rules.
+- Clearly distinguish verified findings from recommendations.
+- Provide exact file paths, methods, and relevant line numbers.
+- Finish with a proposed implementation plan and any questions for Mohan.
+
+-----
+
 Hi Mohan, I've completed the XML POJO changes and the relevant tests are passing.
 
 Just wanted to confirm a few things:
