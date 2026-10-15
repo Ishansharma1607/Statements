@@ -1,4 +1,36 @@
-Hi, I got a message from Esteban from Citi's staffing office. He's asking for a Virtusa POC to gather some information and mentioned that an HR/staffing contact would be helpful. Should I share your contact, or is there someone from Virtusa HR/staffing I should refer him to?
+Continue from the latest DEV startup report.
+
+We have repeated the same ORA-01017 startup failure multiple times. Do not repeat the full application startup investigation.
+
+I authorize LOCAL-ONLY diagnostic code and temporary test harnesses. Nothing needs to be committed.
+
+Focus exclusively on isolating the difference between the successful Oracle pooled connection and the failing StaticDatasource initialization.
+
+1. Create a temporary local diagnostic harness that initializes the application's existing Spring property configuration and datasource path as closely as possible, without starting MQ or the full application.
+
+2. Trace whether DB_PASS is supplied by the intended property source and whether it is unresolved, absent, or transformed incorrectly. Do not log or expose the credential, its hashes, or derived values.
+
+3. Compare the effective property-source precedence and credential-loading mechanism with the successful isolated Oracle connection.
+
+4. Determine whether the failure is caused by property resolution, the runtime secret-injection mechanism, or another verified difference.
+
+5. If an existing approved local/DEV-only configuration mechanism resolves the issue, apply it without modifying shared configuration or persisting credentials.
+
+6. Run the diagnostic harness and verify whether StaticDatasource can initialize successfully.
+
+7. If the required DEV runtime secret-injection contract is unavailable, stop and identify exactly what information or configuration the environment owner must provide.
+
+Do not modify SIT/production configuration, bypass authentication, or repeatedly restart the full application without a confirmed correction.
+
+Keep the response concise:
+
+- Confirmed cause, or remaining uncertainty
+- Diagnostic test performed and result
+- Local correction, if any
+- Datasource initialization: PASS/FAIL
+- Exact external requirement, if blocked
+
+----Hi, I got a message from Esteban from Citi's staffing office. He's asking for a Virtusa POC to gather some information and mentioned that an HR/staffing contact would be helpful. Should I share your contact, or is there someone from Virtusa HR/staffing I should refer him to?
 ---
 
 Sure, I'll check with my manager for the appropriate Virtusa HR/staffing POC and share the details with you.
