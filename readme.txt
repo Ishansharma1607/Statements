@@ -1,3 +1,9 @@
+Hi Mohan, I checked the MQ demo repo and the current MLV configuration for local testing. DEV looks like the better option since the MLV receive queue is configured there, while SIT has some queue/channel mismatches.
+
+Can we use the DEV MQ setup for testing with the demo repo? Also, could you confirm which queue we should publish to and whether we should initially test only XML parsing or include DB staging as well?
+
+-----
+
 Investigate whether the existing QFXLM Customer Message Address MQ-to-Oracle staging implementation can be tested using DEV or SIT.
 
 You have access to:
