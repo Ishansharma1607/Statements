@@ -1,3 +1,38 @@
+Continue Jira C166472-43178 from your latest DEV execution report.
+
+Important: The DEV Oracle staging package is now reported VALID, the Java build and tests passed, and the exact approved MQ queue is QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01.
+
+Our immediate blocker is that the main Java application fails during Oracle datasource initialization before MLVStaticReceiver starts.
+
+Your immediate task is to reproduce, diagnose, and fix this application startup failure.
+
+1. Inspect the actual exception stack traces and the application datasource initialization path.
+2. Investigate both ORA-01017 and ORA-17023. Determine whether they are separate issues or related.
+3. Identify which Oracle JDBC driver, datasource implementation, connection-pool configuration, and runtime database properties the application uses.
+4. Compare the successful read-only DEV JDBC connection against the failing application's datasource configuration without exposing credentials.
+5. Check whether the failure comes from incorrect property resolution, URL format, authentication, Oracle JDBC compatibility, unsupported pool methods, or another verified cause.
+6. Make minimal, safe local code or DEV-only configuration corrections where the cause is confirmed. Do not change shared database objects, credentials, or unrelated production configurations.
+7. Rebuild and retry application startup. Continue until MLVStaticReceiver initializes successfully or an external blocker is clearly established.
+8. Once startup works, prepare the approved DEV-only MQ demo configuration targeting exactly QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01.
+9. Run the approved DEV XML parsing test using the existing sample XML, initially with staging disabled.
+10. When approved staging metadata is available, enable staging, publish a controlled test message, invoke the existing Oracle staging procedure, and verify the header and detail inserts.
+11. Do not invent staging metadata or credentials, bypass authentication, or publish if the intended listener is not ready. Preserve unrelated Git changes and do not commit or push.
+
+Avoid repeating the full repository investigation. Focus on the application startup error, make justified corrections, execute available tests, and continue toward successful end-to-end DEV staging.
+
+Return a concise report containing:
+
+- Root cause of ORA-01017 / ORA-17023.
+- Corrections made.
+- Whether application startup succeeds.
+- Whether MLV listener initialization succeeds.
+- MQ parsing test result.
+- Oracle staging test result.
+- Only the remaining genuine blockers.
+
+-----------
+
+
 QFXLM C166472-43178 — Complete Implementation, DEV MQ Testing and Oracle Staging Verification
 
 1. Objective
