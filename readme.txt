@@ -1,3 +1,301 @@
+QFXLM — Full Cross-Repository Investigation (READ ONLY)
+
+I am providing access to two repositories:
+
+1. Java repository: "qfxlm-qfxlmqfxstatic" — the application containing the MLV JMS receiver, XML DTOs, and parsing logic.
+2. Database repository: "qfxlm-db" — containing Oracle tables, package specifications, package bodies, collection types, and stored procedures.
+
+I am also attaching a DB investigation text file produced from an earlier investigation.
+
+Read the entire attached report first. Then independently verify its findings against BOTH repositories.
+
+The report is investigation context, not unquestionable truth. If the SQL source, Java source, and report disagree, explain the discrepancy with exact file and line references.
+
+1. Business requirement
+
+Jira: C166472-43178 — QFXLM MM customer message address XML from MLV
+
+Original requirement:
+
+There is a customer-message-address XML flow from MLV that should be captured in:
+
+- "QLM_INCOMING_STATIC_MSG"
+- "QLM_INCOMING_STATIC_MSG_DTLS"
+
+The XML should be parsed and its business data eventually saved in:
+
+- "QLM_CUSTOMER_MSG_ADDR"
+- "QLM_CUST_MSG_ADDR_TYPES"
+
+Mohan has confirmed:
+
+- "flexstatic" is the actual XML root element.
+- Incoming XML must be captured in the staging tables.
+- Differences between XML field names and existing Java DTO fields will be discussed separately.
+
+We must not assume whether the current ticket requires only staging integration or complete downstream business-table persistence. Identify this as a clarification if the requirement remains ambiguous.
+
+2. Current Java working-tree state
+
+Previous Copilot work introduced a customer-message-address XML model and reader.
+
+Relevant files include:
+
+- "AddressDetails.java"
+- "MessageDetails.java"
+- "CustomerMsgAddress.java"
+- "Flexstatic.java"
+- "CustomerMessageAddressXmlReader.java"
+- "TestCustomerMessageAddressXmlReader.java"
+- "customerMessageAddress.xml" test resource
+
+Important Git state:
+
+- "AddressDetails.java" has local unstaged modifications.
+- "MessageDetails.java" was reverted and is currently unchanged.
+- Some newly created XML-related files are untracked.
+- The reader/tests may currently reference missing methods in "MessageDetails.java".
+
+Do not restore or change "MessageDetails.java" automatically. Do not discard or overwrite any existing work.
+
+First inspect "git status", current DTOs, and relevant test files.
+
+Previous investigation reported that main Java compilation passed but test compilation failed because the XML reader/tests reference methods missing from the reverted "MessageDetails.java". Independently verify this if possible.
+
+3. Database investigation findings to verify
+
+The attached report identifies these staging tables:
+
+- "QLM_INCOMING_STATIC_MSG"
+- "QLM_INCOMING_STATIC_MSG_DTLS"
+
+It also identifies the existing stored procedure:
+
+"PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg"
+
+The report suggests:
+
+- The procedure inserts a staging header and associated detail records.
+- Incoming XML is stored as ordered "VARCHAR2(4000 CHAR)" fragments in detail rows.
+- The procedure accepts an Oracle collection based on "REC_INCOMING_STATIC_MSG" and "TAB_INCOMING_STATIC_MSG".
+- The procedure has input parameters for message classification, source, branch/customer information, timestamp, and other metadata.
+- It returns success/error information but does not return the generated "STATIC_MSG_CODE".
+- The caller may be responsible for transaction commit/rollback.
+
+These are findings to VERIFY, not assumptions.
+
+Inspect the exact package specification, package body, table definitions, and Oracle SQL types.
+
+Also investigate the reported Dev database discrepancy:
+
+"PKG_QLM_INCOMING_STATIC_MSG" package body was reported as INVALID, with a possible compilation issue involving "PKG_CONF_PARTY_BIC_MGMT".
+
+The checked-in SQL source and deployed Dev database may differ.
+
+Do not assume the checked-in package is identical to the deployed version.
+
+If no database connection is available, clearly distinguish repository findings from previously reported Dev observations.
+
+4. Investigate the existing Java MLV flow
+
+Trace the actual runtime execution path beginning at:
+
+"MLVStaticReceiver.receiveMessage()"
+
+Inspect:
+
+- JMS listener configuration and queue properties.
+- Message body extraction.
+- JMS headers/properties and available metadata.
+- Existing Spring configuration.
+- "MLVProcessor".
+- "CommonXMLProcessor".
+- "DataLoaderIntoXML".
+- Existing DAO and "JdbcTemplate" usage.
+- Existing Oracle stored-procedure invocation patterns.
+- XML parser and DTO packages.
+
+Determine what actually happens when MLV sends XML today.
+
+Identify which classes are production-wired and which are unused or test-only.
+
+Do not assume that a class is used simply because it exists.
+
+5. Investigate staging integration
+
+Determine the smallest safe Java implementation that could reuse:
+
+"PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg"
+
+Investigate:
+
+1. Exact parameter order, IN/OUT modes, and Oracle data types.
+2. How to construct and bind the Oracle collection from Java.
+3. How to split raw XML into fragments of at most 4,000 characters while respecting Oracle character semantics and preserving exact content/order.
+4. How to populate "MESSAGE_SEQ" or other sequence/order fields.
+5. How "STATIC_MSG_CODE" is generated.
+6. How to correlate the generated header with its detail rows.
+7. Whether the Java caller needs the generated code afterward.
+8. Required transaction management.
+9. Whether the procedure performs an internal COMMIT or ROLLBACK.
+10. How procedure success/error outputs should be handled.
+11. How the application should behave when staging fails.
+12. Whether existing database privileges and connection configuration are sufficient.
+
+Prefer the existing procedure if its verified contract satisfies the requirement. Do not create a duplicate staging procedure without a demonstrated need.
+
+6. XML routing and processing
+
+Both message types may use the same root:
+
+"flexstatic"
+
+But their child elements differ:
+
+- "customerAdditionalInfo"
+- "customerMessageAddress"
+
+Investigate how to distinguish them safely.
+
+Check whether an authoritative JMS property, queue, header, or source-system identifier already exists.
+
+If not, evaluate secure inspection of the first child element as a possible approach, but do not implement or assume this is approved.
+
+Also investigate the intended sequence:
+
+MLV JMS message → raw XML staging → XML type identification → POJO parsing → downstream business processing.
+
+Determine whether staging should happen before parsing, including malformed XML.
+
+Do not introduce routing behavior without confirming the required contract.
+
+7. Investigate downstream business procedures
+
+In the DB repository, inspect the customer-message-address maintenance package, including:
+
+"PKG_CUST_MSG_ADDR_MGMT"
+
+Investigate the relevant procedures, their signatures, Oracle collection types, and business validations.
+
+Determine whether an existing procedure can persist customer-message-address data into:
+
+- "QLM_CUSTOMER_MSG_ADDR"
+- "QLM_CUST_MSG_ADDR_TYPES"
+
+Identify whether the procedure expects a typed business object rather than raw XML.
+
+Do not assume that the customer-additional-information wrapper is suitable for customer-message-address processing.
+
+Also investigate whether any existing process consumes rows from the incoming staging detail table.
+
+Clearly distinguish:
+
+- Raw XML staging.
+- XML parsing.
+- Business validation.
+- Final-table persistence.
+
+These are separate responsibilities.
+
+8. Investigate failure handling
+
+Review the actual JMS listener container and transaction configuration.
+
+Determine what currently happens when:
+
+- The database is unavailable.
+- The stored procedure returns failure.
+- XML is malformed.
+- The XML message type is unknown.
+- Parsing fails after staging succeeds.
+- The same JMS message is delivered twice.
+- The listener restarts during processing.
+
+Identify whether current exception handling could cause a failed message to be acknowledged or lost.
+
+Do not invent retry, acknowledgement, idempotency, or transaction policies. Report what is implemented and what requires confirmation.
+
+9. Constraints
+
+This is a STRICTLY READ-ONLY investigation.
+
+You must NOT:
+
+- Modify, restore, revert, create, delete, or format source files.
+- Modify either repository's Git state.
+- Generate implementation files.
+- Execute INSERT, UPDATE, DELETE, DDL, or database-changing procedures.
+- Deploy or compile database packages.
+- Make changes to the JMS listener.
+- Restore the reverted "MessageDetails.java".
+- Invent staging type codes, business mappings, or procedure parameters.
+- Automatically fix unrelated compilation problems.
+
+Read-only searches, Git inspection, source analysis, and non-mutating database metadata queries are allowed where available.
+
+Avoid build commands that generate or alter working-tree files unless explicitly approved.
+
+Wait for my permission before implementation.
+
+10. Required final output
+
+Provide a structured, concise but technically complete report with these sections:
+
+A. Verified existing architecture
+
+Show the current end-to-end Java flow and identify production-wired components.
+
+Include exact source paths and line references.
+
+B. Verified Oracle staging contract
+
+Document the staging procedure's exact signature, Oracle types, header/detail relationships, XML fragmentation behavior, generated identifiers, transaction handling, and OUT parameters.
+
+C. Java-to-Oracle integration plan
+
+Identify the minimum classes/files that would need to be created or modified.
+
+For each change, explain why it is required and whether an existing component can be reused.
+
+Do not write the code yet.
+
+D. XML routing and downstream processing
+
+Explain how the two XML types could be distinguished and which existing business procedures may be reused.
+
+Separate confirmed facts from proposals.
+
+E. Current blockers
+
+Include the invalid Dev package body, repository/deployment discrepancies, missing DTO methods, any required Oracle type binding support, transaction concerns, and unresolved configuration.
+
+F. Questions for Mohan
+
+Provide only the 5–7 highest-priority questions that genuinely require his confirmation.
+
+Do not ask questions that can be answered from the source repositories.
+
+Phrase the questions naturally so I can ask them directly in a meeting.
+
+G. Recommended implementation sequence
+
+Give an ordered plan that minimizes changes and avoids breaking the existing MLV flow.
+
+Separate work that can safely begin from work blocked by missing decisions.
+
+H. Final assessment
+
+Answer:
+
+1. Can the existing staging procedure be reused?
+2. Is the current Java receiver sufficient?
+3. What exactly is missing?
+4. What is the minimum safe implementation?
+5. What must be clarified before coding?
+
+Do not implement anything. Produce the investigation report and wait for my approval.
+=====
+
 We are working on the QFXLM MLV XML ingestion task.
 
 IMPORTANT: This is the separate Oracle PL/SQL database repository, not the Java application repository.
