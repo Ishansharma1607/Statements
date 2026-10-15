@@ -1,3 +1,106 @@
+Investigate whether the existing QFXLM Customer Message Address MQ-to-Oracle staging implementation can be tested using DEV or SIT.
+
+You have access to:
+
+1. Main QFXLM Java repository containing MLVStaticReceiver, MLVProcessor, Customer Message Address JAXB classes, and IncomingStaticMessageStagingDao.
+2. Mohan's MQ demo repository (180228.Demo) and its associated skill.
+3. QFXLM database repository and previous investigation reports.
+
+IMPORTANT: READ-ONLY INVESTIGATION FIRST.
+
+Do not modify files, commit, build deployment artifacts, publish MQ messages, connect to or write to a database, or trigger external operations without my approval.
+
+Task 1: Compare DEV and SIT configurations
+
+Inspect the existing configuration for both environments and identify:
+
+- IBM MQ host, port, channel, queue manager, and receive queue configuration.
+- Whether the demo producer and main application's consumer are configured to use compatible MQ destinations.
+- Whether the configurations are complete and reference resolvable values.
+- Whether authentication, TLS, VPN, or other prerequisites exist.
+- Which environment appears suitable for a controlled test.
+
+Do not expose credentials, passwords, tokens, or sensitive connection details in the report.
+
+Task 2: Check database readiness
+
+Inspect the DB repository and available non-invasive evidence.
+
+Verify, where permitted:
+
+- Whether PKG_QLM_INCOMING_STATIC_MSG exists in DEV and SIT.
+- Whether the package specification and body are VALID.
+- Whether prc_log_incoming_static_msg is available.
+- Whether QLM_INCOMING_STATIC_MSG and QLM_INCOMING_STATIC_MSG_DTLS exist.
+- Whether the Java application database user has the required EXECUTE and Oracle object-type privileges.
+- Whether the required metadata values are configured.
+
+Previously, the DEV package body was reported INVALID. Determine whether this remains true using available evidence. Do not assume SIT is valid merely because SIT MQ configuration exists.
+
+If live database access is unavailable, clearly mark the findings UNVERIFIED and provide safe, read-only SQL queries for an authorized developer to execute.
+
+Task 3: Check MQ connectivity readiness
+
+Determine whether a connection to DEV or SIT can be tested using existing approved tooling.
+
+Distinguish:
+
+- Configuration found in source code.
+- Network reachability.
+- MQ authentication/connectivity.
+- Queue authorization.
+- Successful message publishing.
+- Successful message consumption.
+
+Do not claim an environment works unless there is evidence for the relevant level of verification.
+
+Do not connect or publish anything yet.
+
+Task 4: Prepare the XML integration test
+
+Use the existing customerMessageAddress.xml test resource.
+
+Inspect the demo producer's MqMessageSender.java, run.bat, pom.xml, and mq_config.properties.
+
+Confirm:
+
+- The exact build command.
+- The correct way to execute the sender JAR.
+- How to pass the XML file without accidentally publishing the configuration file.
+- Whether the XML will reach MLVStaticReceiver.
+- How to verify MLVProcessor parsed Customer Message Address successfully.
+- Whether mlv.staging.enabled should remain false for the first test.
+- What additional conditions must be satisfied before enabling Oracle staging.
+
+Review the existing asynchronous QFXLMExecutorService and JMS transaction behavior. Identify the safest approved testing approach without changing shared executor or listener behavior.
+
+Task 5: Recommend the next action
+
+Provide a comparison table:
+
+Check | DEV | SIT | Evidence | Confidence
+
+Use these status labels:
+
+- VERIFIED WORKING
+- VERIFIED BLOCKED
+- CONFIGURED BUT UNTESTED
+- UNKNOWN
+
+Then recommend ONE environment for the first controlled test, with the reason.
+
+Separate the testing into:
+Phase A: Build demo JAR.
+Phase B: MQ publish/consume and JAXB parsing, staging disabled.
+Phase C: MQ-to-Oracle staging, only after database validity, metadata, privileges, and failure-handling prerequisites are confirmed.
+
+Provide exact commands for the recommended environment, but do not execute them.
+
+Clearly identify which actions require my approval and which require Mohan or the environment administrator.
+
+Do not modify any repository or external system. Finish with a concise recommendation and the minimum blockers that must be resolved before testing.
+
++---+----&-&
 Continue in this existing Copilot session for Jira C166472-43178.
 
 Mohan has provided an MQ demo repository, which I have already cloned locally. I have also created a skill documenting this repository.
