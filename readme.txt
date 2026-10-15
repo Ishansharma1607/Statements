@@ -1,3 +1,37 @@
+Continue from the latest execution report.
+
+We have repeatedly confirmed that the standalone DEV Oracle pooled connection succeeds, while the main application fails with ORA-01017 during StaticDatasource.init().
+
+I want you to focus exclusively on resolving this application startup issue before investigating MQ or staging again.
+
+You have permission to make minimal local/DEV-only code and configuration changes.
+
+1. Trace the exact DB_PASS value-resolution and transformation path from the runtime environment through spring-qas.properties, spring-qas.xml, PropertySourcesPlaceholderConfigurer, CommonUtil.getEncryptedDBPwd(), and StaticDatasource.init().
+
+2. Compare the successful standalone connection with the failing application path. Identify the precise difference without exposing any credentials or secret-derived values.
+
+3. Check whether DB_PASS=${DB_PASS} is unresolved, whether the legacy application expects an encrypted versus plaintext value, and whether password decryption or property precedence is causing ORA-01017.
+
+4. Fix the confirmed issue with the smallest safe local/DEV-only change. Do not hardcode credentials, log secrets, or change SIT/production configuration.
+
+5. Rebuild and retry the actual application startup. Continue troubleshooting until the datasource initializes successfully or you identify a specific external dependency that prevents a safe fix.
+
+6. Once startup succeeds, verify MLVStaticReceiver initializes. Then report the result before proceeding with DEV MQ publishing.
+
+Do not repeat the Oracle package checks, DAO signature checks, or staging metadata investigation. Those findings are already documented.
+
+Report only:
+
+- Exact root cause
+- Files changed
+- Fix implemented
+- Actual application startup result
+- MLVStaticReceiver initialization result
+- Any genuinely unavoidable external blocker
+
+Do not conclude with another speculative investigation report. Implement and verify a correction where the evidence supports one.
+--------&&&
+
 Continue from the latest DEV execution report for Jira C166472-43178.
 
 The DEV Oracle package is now VALID, its procedure signature matches our DAO, and the same DEV connection details successfully established an isolated Oracle pooled connection.
