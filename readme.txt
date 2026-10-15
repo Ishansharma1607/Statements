@@ -1,3 +1,44 @@
+Create persistent, local-only GitHub Copilot workspace instructions for the QFXLM Java project.
+
+Purpose: Future fresh Copilot Agent sessions must automatically understand how to build, run, debug and test this project locally without repeating our earlier Oracle/Spring/MQ investigations.
+
+Use the existing investigation reports, actual source code, Spring configuration and successful startup evidence.
+
+Create or update:
+
+.github/copilot-instructions.md
+
+Requirements:
+
+1. Make sure the instructions are automatically discoverable by GitHub Copilot in IntelliJ.
+2. Document the verified local build and startup procedure.
+3. Document the previously diagnosed DB_PASS placeholder-resolution issue, its root cause, and how to reproduce the successful local startup safely.
+4. Explain how DB_PASS is supplied through the approved JVM property/environment mechanism, without storing any credential values.
+5. Document the required Spring profiles and feature flags, including when MQ and MLV listeners should be enabled.
+6. Explain the difference between successful Spring startup and successful IBM MQ connectivity.
+7. Record that DEV MQ currently returns MQRC 2035 (NOT_AUTHORIZED), which requires an authorized configuration/access resolution rather than a speculative Java workaround.
+8. Record that live Oracle staging requires approved metadata and must never use guessed business values.
+9. Document the locations and purposes of the Java repository, database repository, demo project, and available database/demo skills, using verified paths only.
+10. Preserve the key architectural decisions Mohan made for Customer Message Address and common staging.
+11. Include the current Jira number C166472-43178.
+
+IMPORTANT:
+
+- This file is for my local development workspace only.
+- Do not commit or push it.
+- Exclude it locally through .git/info/exclude if it is not already tracked.
+- Do not modify a shared .gitignore solely for this purpose.
+- Never store passwords, tokens, connection secrets or sensitive diagnostic outputs.
+- Do not add environment-specific credential modifications to the production PR.
+- Do not revert the legitimate incomingStaticMessageStagingDao bean in spring-qas.xml.
+- If local startup still requires temporary changes to tracked Spring files, document those changes and how to exclude them from the PR. Prefer a verified local-only run configuration where possible.
+- Do not invent startup instructions; distinguish tested steps from unresolved setup.
+
+After creating the file, verify that GitHub Copilot in IntelliJ recognizes it as workspace instructions.
+
+Finally, show me the complete instructions file, Git status, and confirm that it will not be included in my Jira PR.
+-----
+
 QFXLM Jira C166472-43178 — Final Targeted Code Review, DEV Startup Fix and Integration Verification
 
 You have completed the recovery audit and initial cleanup of the QFXLM Customer Message Address implementation.
