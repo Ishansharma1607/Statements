@@ -1,3 +1,633 @@
+QFXLM — Recover, Clean Up, Complete and Verify Jira C166472-43178
+
+YOUR ROLE AND OBJECTIVE
+
+You are a senior Java/Spring Boot, Oracle PL/SQL, IBM MQ and enterprise integration engineer.
+
+This is a NEW Copilot Agent session. A previous session worked extensively on this task, exhausted its context, underwent automatic conversation compaction, and may have lost track of its original objective.
+
+Your job is to:
+
+1. Reconstruct the current implementation and previous work using actual evidence.
+2. Identify and safely remove unnecessary or incorrect Copilot-generated changes.
+3. Preserve the original Jira implementation and legitimate developer changes.
+4. Resolve the outstanding DEV application startup problem if possible.
+5. Complete the integration required by Mohan.
+6. Build, test and, where authorized, perform controlled DEV end-to-end verification.
+7. Leave behind a small, correct, maintainable, reviewable change set.
+
+Do not assume that the previous Copilot session completed the task correctly simply because it reported BUILD SUCCESSFUL.
+
+Prioritize the actual Jira requirement and Mohan's instructions. Do not expand scope unnecessarily.
+
+---
+
+1. WORKSPACE, REPOSITORIES AND SKILLS
+
+You have access to the relevant repositories in the workspace. Discover their actual locations.
+
+These include:
+
+A. Main QFXLM Java repository
+
+Contains the static-interface application, including:
+
+- MLV XML processing.
+- JAXB DTOs.
+- MQ listeners.
+- Spring configuration.
+- Oracle staging DAO.
+- Customer Message Address implementation.
+- Existing Customer Additional Info processing.
+- Related tests.
+
+This is the primary implementation repository.
+
+B. QFXLM database repository
+
+Contains Oracle PL/SQL packages, package bodies, tables, types, procedures and database scripts.
+
+Use this repository to verify the exact Oracle contract, rather than inventing stored-procedure parameters or metadata.
+
+C. Demo/integration project
+
+You also have access to the demo project and its related files.
+
+Inspect it for:
+
+- Existing IBM MQ publishing utilities.
+- Runnable demo JARs.
+- Example configurations.
+- Queue names.
+- XML publishing patterns.
+- Integration test instructions.
+- DEV-only connection configuration.
+- Previous test artifacts and logs.
+
+Do not rebuild a new MQ demo utility if an existing working one can be reused.
+
+Available skills
+
+You also have access to skills for:
+
+- Connecting to and investigating the database.
+- Working with the demo project.
+
+Discover and read the instructions for these skills before performing the relevant work.
+
+Use the database skill when useful to inspect the authorized DEV Oracle environment, including package validity, procedure signatures, database objects, reference data and approved metadata.
+
+Use the demo-project skill when useful to inspect or execute the existing demo workflow.
+
+Follow the skills' security, environment and authorization requirements.
+
+Do not assume a skill provides unrestricted access. Do not connect to SIT/production, modify Oracle objects or perform destructive database operations without explicit authorization.
+
+Do not ask me to provide repository paths that are already discoverable from the workspace.
+
+---
+
+2. MAIN JIRA REQUIREMENT
+
+Jira: C166472-43178
+
+Title: QFXLM MM customer message address XML from MLV
+
+The requirement concerns processing Customer Message Address static-data XML received from MLV.
+
+The XML structure is approximately:
+
+flexstatic
+  customerMessageAddress
+    addressDetails
+    messageDetails
+      messageMappingEntry (repeated)
+
+Use the actual supplied XML and mapping workbook as authoritative references.
+
+Relevant artifacts include:
+
+- customerMessageAddress.xml
+- QFXLM_QFX_mapping_message_address_Ver2.xlsx
+
+Locate these files in the available repositories/workspace.
+
+Required functional behavior
+
+The application must support receiving Customer Message Address XML from MLV, converting it into appropriate Java POJOs, and processing it through the existing common static-message integration architecture.
+
+The Jira identifies:
+
+Common staging tables:
+
+- QLM_INCOMING_STATIC_MSG
+- QLM_INCOMING_STATIC_MSG_DTLS
+
+Business tables:
+
+- QLM_CUSTOMER_MSG_ADDR
+- QLM_CUST_MSG_ADDR_TYPES
+
+The common staging flow captures the incoming XML and associated metadata.
+
+Subsequent message-specific processing is responsible for persisting the mapped business data into the appropriate final tables.
+
+Determine from Jira, code, DB objects and Mohan's confirmed instructions which portions are assigned to this implementation and which belong to the subsequent message-specific processing phase.
+
+Do not assume the common staging procedure itself populates the final business tables.
+
+---
+
+3. MOHAN'S CONFIRMED INSTRUCTIONS
+
+These are important decisions already made during our meeting.
+
+Do not treat them as unresolved questions.
+
+A. Customer Message Address POJOs
+
+Mohan explicitly instructed:
+
+1. Do NOT modify the existing shared AddressDetails.java for this feature.
+2. Do NOT modify the existing shared MessageDetails.java for this feature.
+3. Create NEW Customer Message Address-specific POJOs matching the incoming XML structure and field names.
+4. Reuse Karthik's existing merged Flexstatic.java.
+5. Extend Flexstatic.java to support customerMessageAddress while preserving customerAdditionalInfo.
+6. Do NOT create another duplicate Flexstatic.java.
+7. Preserve existing Customer Additional Info XML processing.
+
+These instructions supersede earlier Copilot assumptions.
+
+B. Common staging DAO
+
+Mohan assigned me to create ONE reusable Java DAO for common incoming XML staging.
+
+The DAO belongs in the existing:
+
+com.citi.qlm.staticinterface.common.dao
+
+It should follow existing project JDBC/StoredProcedure conventions.
+
+It must be reusable by other developers and message types, not just Customer Message Address.
+
+The existing Oracle procedure is:
+
+PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg
+
+This procedure is intended to insert the common staging header and XML details.
+
+Do not create a new staging procedure unless a verified requirement demonstrates that one is necessary.
+
+Verify the exact live Oracle procedure signature, record/collection types, OUT parameters and error-handling contract.
+
+C. Existing integration flow
+
+Karthik has merged shared XML processing and MQ-related code.
+
+Relevant existing classes include:
+
+- Flexstatic.java
+- MLVProcessor.java
+- CommonXMLToPojoConverter.java
+- JAXBParserInstanceMLV.java
+- MLVStaticReceiver.java
+
+Previously, MLVProcessor converted XML using Flexstatic.class but validated only customerAdditionalInfo.
+
+The implementation must also recognize customerMessageAddress without breaking the existing customerAdditionalInfo path.
+
+The existing MQ listener must be integrated with the correct processing flow.
+
+Do not duplicate working infrastructure.
+
+D. Staging versus business processing
+
+Mohan explained that common staging is shared across incoming XML types.
+
+Message-specific wrapper stored procedures are separate from the common staging procedure.
+
+Do not confuse the earlier Customer Additional Info wrapper task with the new Customer Message Address staging work.
+
+The earlier wrapper was related to:
+
+PKG_QLM_INCOMING_STATIC_MSG
+EDIT_CUSTOMER_ADDITIONAL_INFO
+
+That earlier task is separate from the current Jira's common staging DAO.
+
+---
+
+4. WHAT PREVIOUS COPILOT SESSIONS IMPLEMENTED
+
+Previous Copilot sessions created or modified files including:
+
+- CustomerMessageAddress.java
+- CustomerMessageAddressDetails.java
+- CustomerMessageAddressMappingEntry.java
+- CustomerMessageAddressXmlReader.java
+- IncomingStaticMessageMetadata.java
+- IncomingStaticMessageStagingDao.java
+- IncomingStaticStagingException.java
+- IncomingStaticXmlChunker.java
+- MlvIncomingStaticMetadataProvider.java
+- MlvProcessingException.java
+- Flexstatic.java
+- MLVProcessor.java
+- MLVStaticReceiver.java
+- StaticServiceConfiguration.java
+- spring-qas.xml
+- Related unit tests.
+
+Some of these files may be tracked modifications, while others may still be untracked.
+
+Earlier Copilot also modified shared AddressDetails.java. That pre-existing modification must not be discarded automatically.
+
+At one stage, MessageDetails.java and a duplicate Flexstatic.java were reverted to accommodate Karthik's merged implementation.
+
+The current workspace may differ from these historical details.
+
+Inspect the actual repository state. Do not assume this list is complete or that every listed change is correct.
+
+---
+
+5. THE PREVIOUS DATABASE INVESTIGATION
+
+The DEV Oracle investigation established:
+
+- The DEV database service was reachable.
+- Direct JDBC authentication succeeded.
+- OracleConnectionPoolDataSource.getPooledConnection() succeeded in an isolated test.
+- The DEV package PKG_QLM_INCOMING_STATIC_MSG was VALID.
+- Its package body was VALID.
+- Required staging tables and Oracle types were VALID.
+- The live staging procedure signature matched the Java DAO's reported 11-position binding.
+- No compilation errors were reported for the relevant package.
+
+However, the actual application failed during startup with:
+
+ORA-01017: invalid username/password; logon denied
+
+The failure occurred during:
+
+StaticDatasource.init()
+
+The relevant property-resolution path was:
+
+spring-qas.properties
+  -> spring-qas.xml
+  -> MethodInvokingFactoryBean
+  -> CommonUtil.getEncryptedDBPwd()
+  -> StaticDatasource.encryptedPassword
+  -> OracleConnectionPoolDataSource.setPassword(...)
+  -> getPooledConnection()
+
+The suspicious property was:
+
+DB_PASS=${DB_PASS}
+
+Earlier isolated investigation suggested that the application runtime received a different, empty, unresolved or otherwise altered password compared with the successful standalone connection test.
+
+The method CommonUtil.getEncryptedDBPwd() was observed to strip surrounding double quotes; it did not perform actual encryption/decryption in the inspected path.
+
+Do not repeat unrelated Oracle-driver investigations unless new evidence requires it.
+
+---
+
+6. THE INTERRUPTED DEV STARTUP CORRECTION
+
+The previous Copilot session was attempting to correct the application runtime password/property handoff.
+
+It modified CommonUtil.java to preserve an already resolved password but fall back to a JVM system property or environment variable when the supplied password was blank or an unresolved placeholder.
+
+The intended behavior was approximately:
+
+- Preserve an existing valid supplied password.
+- Detect blank or unresolved ${...} values.
+- Use an approved DEV runtime property/environment value when needed.
+- Preserve existing enterprise secret-loading behavior.
+- Avoid hardcoded credentials.
+
+The agent reported successful compilation and unit tests after the correction.
+
+However, earlier application startup attempts continued to fail with ORA-01017.
+
+The database startup fix was NOT conclusively verified.
+
+Inspect the current CommonUtil.java implementation carefully.
+
+Determine whether the correction is present, safe and actually effective.
+
+Do not make a global production password-handling change solely to support a local demo.
+
+Prefer an approved local/DEV-only configuration or runtime correction if that resolves the issue without modifying shared production behavior.
+
+Never expose, print, log, hardcode or persist database passwords.
+
+---
+
+7. IMPORTANT: PREVIOUS COPILOT CONTEXT COMPACTION
+
+During the startup investigation, the previous Copilot session exhausted its context and automatically summarized the conversation.
+
+After compaction, it appeared to lose the original task focus.
+
+It began changing additional classes including:
+
+- MLVProcessor.java
+- MLVStaticReceiver.java
+- StaticUpdateMessageReceiver.java
+- JAXBParserInstanceMLV.java
+- Other XML/MQ processing classes.
+- Additional test files.
+
+Its final summary claimed:
+
+- Added semantic validation for MLV XML.
+- Required exactly one supported child element.
+- Added required customer identifier validation.
+- Added Customer Message Address details/mapping validation.
+- Added XML staging safeguards.
+- Added Unicode-safe 4,000-character XML chunking.
+- Changed JAXB initialization.
+- Changed MQ configuration resolution.
+- Changed portal XML MQ forwarding.
+- Modified exception propagation and JMS retry behavior.
+- Added tests.
+- Gradle build passed.
+- JUnit passed.
+- TestNG passed.
+
+It did NOT demonstrate:
+
+- Successful main application startup.
+- Successful datasource initialization.
+- Operational MLVStaticReceiver initialization.
+- Live DEV MQ message consumption.
+- Successful Oracle staging.
+- Final-table persistence.
+
+The final summary therefore does not establish end-to-end completion.
+
+Some post-compaction changes may be correct. Others may be unnecessary, duplicated, speculative or risky.
+
+Your task includes reviewing and cleaning up these changes.
+
+---
+
+8. RECOVER THE HISTORY BEFORE CHANGING CODE
+
+First inspect all three repositories.
+
+Record:
+
+- Branches.
+- Git status.
+- Tracked changes.
+- Staged changes.
+- Untracked files.
+- Current file counts.
+- Full diff inventory.
+- Relevant recent commits.
+
+Use Git history, IDE Local History if available, previous investigation reports, terminal output and temporary execution logs to reconstruct what happened.
+
+The previous session created temporary DEV diagnostic directories under a location resembling:
+
+C:\Users\iso7951\AppData\Local\Temp\5\
+
+Look for folders beginning:
+
+qfxlm-dev-
+
+These may include:
+
+- Isolated JDBC results.
+- Spring property-resolution diagnostics.
+- Application startup logs.
+- MQ connection attempts.
+- Earlier execution reports.
+
+The exact folders may no longer exist. Verify rather than assume.
+
+Search the workspace for earlier investigation reports, including files similar to InvestigationReportDB.txt.
+
+Important limitation:
+
+Git alone may not reveal which uncommitted changes were created before versus after context compaction.
+
+Use additional available evidence where possible.
+
+If origin cannot be established, say UNKNOWN rather than inventing history.
+
+---
+
+9. BACKUP AND CLEANUP PERMISSIONS
+
+Before editing or reverting:
+
+1. Create a complete local backup of the current Java working tree, including untracked files.
+2. Store it outside the Git repository.
+3. Verify the backup exists and contains the relevant source files.
+4. Record the current Git diff and file inventory.
+
+You are explicitly authorized to clean up unnecessary previous Copilot changes.
+
+You MAY:
+
+- Revert clearly unnecessary or incorrect Copilot-generated changes.
+- Remove duplicated implementations.
+- Remove unnecessary speculative validations.
+- Remove unrelated refactoring.
+- Correct broken or incomplete implementation.
+- Remove unnecessary temporary diagnostic artifacts after preserving required evidence.
+- Perform selective hunk-level reversions.
+- Restore a file to its original state when all its changes are demonstrably unnecessary.
+- Fix local/DEV-only startup configuration.
+- Run builds and tests.
+
+You MUST:
+
+- Preserve legitimate original Jira work.
+- Preserve the reusable staging DAO.
+- Preserve Customer Message Address-specific POJOs.
+- Preserve Karthik's merged code.
+- Preserve existing Customer Additional Info behavior.
+- Preserve the pre-existing AddressDetails.java modification unless I explicitly authorize otherwise.
+- Preserve unrelated changes by other developers.
+- Prefer minimal, reviewable modifications.
+
+If a file contains both necessary and unnecessary changes, revert only the unnecessary portions.
+
+If a change's origin or purpose is uncertain, retain it and report the uncertainty rather than deleting it.
+
+Do not use git reset --hard or git clean -fd.
+
+Do not commit or push.
+
+The final production change set should contain only changes justified by the Jira requirement and Mohan's instructions.
+
+Local DEV demo workarounds must remain separate from production changes.
+
+---
+
+10. VERIFY THE CUSTOMER MESSAGE ADDRESS IMPLEMENTATION
+
+Inspect the supplied sample XML and mapping workbook.
+
+Verify:
+
+1. JAXB root mapping.
+2. Customer Message Address child mapping.
+3. Exact XML element names.
+4. Address details fields.
+5. Message details fields.
+6. Repeated messageMappingEntry handling.
+7. Optional versus required XML elements according to authoritative requirements.
+8. Correct behavior for missing or malformed XML.
+9. Existing Customer Additional Info compatibility.
+10. Correct integration with MLVProcessor.
+11. Correct listener-to-processor flow.
+12. Correct integration with common staging.
+13. No duplicate DTO classes.
+14. No unnecessary changes to shared DTOs.
+
+Do not introduce stricter validation than the XML schema, mapping or business requirements justify.
+
+If the previous agent introduced unsupported validation, correct or remove it.
+
+---
+
+11. VERIFY THE COMMON ORACLE STAGING DAO
+
+Inspect the Java DAO and actual Oracle procedure.
+
+Confirm:
+
+- Correct package/procedure name.
+- Correct IN/OUT parameters.
+- Correct parameter order and SQL types.
+- Correct Oracle record/collection binding.
+- Correct XML chunking and ordering.
+- Correct Unicode handling.
+- Correct error reporting.
+- Correct success/failure flag handling.
+- Correct transaction behavior.
+- Correct reuse across message types.
+- Correct Spring bean registration.
+- Correct interaction with MLV processing.
+
+Use the database repository and, where appropriate, the database skill to verify against the authorized DEV database.
+
+Do not invent the Oracle signature.
+
+Do not modify database packages or tables.
+
+---
+
+12. STAGING METADATA — INVESTIGATE BEFORE ASKING MOHAN
+
+Earlier reports could not establish the approved Customer Message Address values for:
+
+STATIC_TYPE
+FO_BRANCH_CODE
+IN_OR_OUT
+MSG_STATUS
+SOURCE_SYSTEM
+
+Previous DEV rows reportedly contained types such as CUST_ACC and HOLIDAY, but those values must not automatically be reused.
+
+Search:
+
+- Database package source.
+- Existing staging rows.
+- Reference/master tables.
+- Java configuration.
+- Other static-message processors.
+- Mapping documents.
+- Demo project.
+- Relevant tests.
+- Existing integration conventions.
+
+Use the database skill for authorized read-only DEV queries if useful.
+
+Distinguish a value that is technically accepted by the database from a value that is actually approved for Customer Message Address.
+
+Only ask Mohan about values that cannot be reliably established.
+
+Do not insert staging rows with guessed metadata.
+
+If the metadata is unresolved, continue independent testing and mark actual staging BLOCKED.
+
+---
+
+13. RESOLVE THE DEV APPLICATION STARTUP BLOCKER
+
+This remains a priority.
+
+Trace the actual runtime configuration used by the launched application.
+
+Compare it with the successful standalone Oracle connection test.
+
+Verify:
+
+- Actual Spring profile.
+- Loaded property files.
+- Property-source precedence.
+- Placeholder resolution.
+- JVM system properties.
+- Environment variables.
+- Secret-agent integration.
+- Password transformation.
+- StaticDatasource initialization.
+- Actual DEV service name and database principal.
+
+Use safe diagnostics that report resolution status and source identity without revealing secret values or secret-derived fingerprints.
+
+Do not assume the correct password is reaching StaticDatasource.
+
+If the root cause is confirmed, apply the smallest safe LOCAL/DEV-only correction.
+
+Do not rewrite the enterprise credential system.
+
+Rebuild and launch the actual application.
+
+Confirm startup from actual process output, not just unit tests.
+
+If it still fails, report the exact remaining blocker.
+
+Do not enter an unlimited retry loop.
+
+---
+
+14. DEMO PROJECT AND DEV MQ TESTING
+
+Use the available demo-project skill and inspect the existing demo project.
+
+Previous artifacts included a demo MQ sender utility resembling:
+
+mq-sender-utility.jar
+
+Use the actual current artifact and configuration rather than assuming this name is still correct.
+
+The intended DEV queue is:
+
+QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01
+
+Previous investigations reported an MQ error similar to:
+
+MQRC_Q_MGR_NAME_ERROR (2058)
+
+This may involve incorrect queue-manager configuration, 
+
+
+
+
+
+
+
+
+_----+----&+&-&&&&&&--
+
 Continue from the latest DEV startup report.
 
 We have repeated the same ORA-01017 startup failure multiple times. Do not repeat the full application startup investigation.
