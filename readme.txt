@@ -1,3 +1,37 @@
+We are working on the QFXLM MLV XML ingestion task.
+
+IMPORTANT: This is the separate Oracle PL/SQL database repository, not the Java application repository.
+
+The Java repository investigation found that MLVStaticReceiver currently receives and logs incoming XML but does not persist it.
+
+Mohan confirmed that incoming XML must be captured in staging tables.
+
+The Jira mentions:
+
+- QLM_INCOMING_STATIC_MSG
+- QLM_INCOMING_STATIC_MSG_DTLS
+
+We previously worked on PKG_QLM_INCOMING_STATIC_MSG, including a wrapper for EDIT_CUSTOMER_ADDITIONAL_INFO.
+
+Please investigate this database repository thoroughly.
+
+1. Search for both staging tables, their DDL, constraints, and relationships.
+2. Find packages and procedures that insert or update records in these tables.
+3. Inspect PKG_QLM_INCOMING_STATIC_MSG, including its specification and body.
+4. Identify whether an existing procedure can store incoming MLV XML or whether a new procedure is needed.
+5. Identify exact procedure parameters, data types, OUT parameters, and required values.
+6. Check whether the existing flow supports both customerAdditionalInfo and customerMessageAddress XML.
+7. Trace any existing logic that processes staged XML into QLM_CUSTOMER_MSG_ADDR and QLM_CUST_MSG_ADDR_TYPES.
+8. Explain how the Java application should call the relevant database procedure, including any dependencies or missing contracts.
+
+For every finding, provide exact file paths, procedure names, and relevant line numbers.
+
+Clearly distinguish verified findings from assumptions.
+
+DO NOT modify, create, revert, or delete any files. This is investigation only.
+
+At the end, give me a concise summary of what already exists, what is missing, and what needs confirmation from Mohan.
+-----
 Before starting, please note these updates:
 
 1. Karthik's changes have now been merged into the current branch.
