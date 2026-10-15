@@ -1,3 +1,9 @@
+Hi, I got a message from Esteban from Citi's staffing office. He's asking for a Virtusa POC to gather some information and mentioned that an HR/staffing contact would be helpful. Should I share your contact, or is there someone from Virtusa HR/staffing I should refer him to?
+---
+
+Sure, I'll check with my manager for the appropriate Virtusa HR/staffing POC and share the details with you.
+---
+
 Sure, I can share my Virtusa manager's contact. Just to confirm, would my reporting manager be the right POC, or do you need someone specifically from Virtusa HR/staffing?
 
 ---
