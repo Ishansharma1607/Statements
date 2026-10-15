@@ -1,3 +1,249 @@
+QFXLM Jira C166472-43178 — Final Targeted Code Review, DEV Startup Fix and Integration Verification
+
+You have completed the recovery audit and initial cleanup of the QFXLM Customer Message Address implementation.
+
+I have now reviewed the modified-file diffs and the newly created implementation with an external reviewer.
+
+Do not restart the implementation, re-run a broad cleanup, or refactor unrelated parts of the application.
+
+The existing implementation is generally aligned with Mohan's requirements. The goal now is to verify specific technical concerns, correct demonstrated problems only, and resolve the remaining DEV integration blockers.
+
+1. Preserve Mohan's architecture
+
+The confirmed requirements remain:
+
+- Support the MLV "flexstatic/customerMessageAddress" XML.
+- Use dedicated Customer Message Address POJOs.
+- Do not repurpose the shared "AddressDetails.java" or "MessageDetails.java".
+- Reuse Karthik's shared "Flexstatic.java" while preserving Customer Additional Info.
+- Maintain ONE reusable common Java staging DAO under "com.citi.qlm.staticinterface.common.dao".
+- Use the existing "PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg" procedure.
+- Preserve raw XML in the common incoming staging tables.
+- Do not implement unrelated business-table persistence or new procedures.
+
+The current implementation appears to satisfy much of this. Preserve it unless a specific defect is found.
+
+2. Review six specific technical concerns
+
+A. MLVStaticReceiver.java
+
+The implementation now submits MLV processing to an executor, waits with "Future.get()", and propagates exceptions.
+
+Inspect the existing JMS listener architecture and confirm:
+
+- Whether synchronous waiting is appropriate.
+- Whether thrown exceptions cause the intended JMS redelivery or retry behavior.
+- Whether the configured JMS listener uses transactions or automatic acknowledgment.
+- Whether errors could cause messages to be lost or repeatedly processed.
+- Whether there is a simpler implementation consistent with the existing architecture.
+
+Do not introduce a new global JMS retry framework.
+
+Keep or correct the current implementation based on actual project conventions.
+
+B. IncomingStaticMessageStagingDao.java
+
+The DAO currently obtains a connection from "JdbcTemplate.getDataSource()", constructs an Oracle ARRAY of records, invokes the procedure, and handles commit/rollback.
+
+Confirm:
+
+- Exact Oracle procedure parameter positions and types against the database repository and DEV package.
+- Correct ARRAY/STRUCT creation and cleanup.
+- Correct order of XML fragments.
+- Correct interpretation of success and error OUT parameters.
+- Compatibility with Spring-managed transactions and existing datasource behavior.
+- Correct connection ownership and commit/rollback behavior.
+- No unnecessary commit of an outer transaction.
+- Proper failure propagation without partial staging.
+
+Use the database skill for approved read-only DEV inspection if necessary.
+
+Do not modify database objects.
+
+C. IncomingStaticXmlChunker.java
+
+Confirm that the 4,000-code-point splitting strategy is valid for the actual "VARCHAR2(4000 CHAR)" Oracle record field and the database character set.
+
+Pay attention to supplementary Unicode characters, JDBC binding and Oracle length semantics.
+
+Do not replace working chunking logic without evidence of a problem.
+
+D. MlvIncomingStaticMetadataProvider.java
+
+The provider appears to validate configuration for both Customer Additional Info and Customer Message Address when staging is enabled.
+
+Determine whether that is required by the actual deployment architecture.
+
+Avoid making Customer Message Address staging depend unnecessarily on configuration for another independently managed message type.
+
+Preserve the rule that business metadata must not be guessed.
+
+E. spring-qas.properties
+
+The prior session removed the self-referential "DB_PASS=${DB_PASS}" property.
+
+Investigate whether that correction is compatible with actual deployment and secret injection.
+
+The previous ORA-01017 failure was reportedly no longer reproduced, but successful application startup was NOT demonstrated.
+
+Do not reintroduce the previous issue or make global credential-handling changes.
+
+F. Unrelated modified files
+
+Inspect the remaining changes to:
+
+- StaticUpdateMessageReceiver.java
+- JAXBParserInstanceMLV.java
+- Any other existing shared classes modified exclusively for speculative cleanup.
+
+Determine whether each difference is actually necessary for this Jira.
+
+If demonstrably unrelated, selectively revert that difference without affecting legitimate developer work.
+
+Preserve the pre-existing AddressDetails.java changes. Do not include them in this Jira's proposed PR solely because they exist in the working tree.
+
+3. Solve the actual DEV startup blocker
+
+The previous recovery report said:
+
+- Direct DEV Oracle connection: PASS.
+- Oracle package and staging types: VALID.
+- Previous ORA-01017: not reproduced after property correction.
+- Actual application startup: FAIL.
+- Immediate failure: missing "ibmMQListenerContainerFactory".
+- MLVStaticReceiver operational: NO.
+
+Investigate the exact missing bean problem.
+
+Inspect:
+
+- Active Spring profiles.
+- Spring XML and Java MQ configuration.
+- "@JmsListener" declarations.
+- Listener container factory naming.
+- "@EnableJms" usage.
+- MQ connection factory configuration.
+- Environment-specific properties.
+- Deployment/integration repository.
+- Existing demo project.
+
+You have access to the demo-project skill and database skill. Read and use those skills where appropriate.
+
+Determine whether this is:
+
+1. A missing configuration resource.
+2. An incorrect active profile.
+3. A bean-name mismatch.
+4. An unintended effect of enabling the new MLV listener.
+5. An unavailable deployment-provided MQ configuration.
+6. Another confirmed cause.
+
+Do not create a duplicate MQ listener container factory without first establishing why the existing infrastructure cannot be used.
+
+If configuration is unavailable locally, document the exact requirement rather than fabricating a replacement.
+
+4. Verify the XML model against the actual sample
+
+Inspect the authoritative Customer Message Address XML and mapping workbook.
+
+Verify the dedicated DTO structure, including:
+
+- addressDetails.
+- messageDetails.
+- Repeated messageMappingEntry elements.
+- Exact case-sensitive JAXB element names.
+- All required fields.
+- Existing Customer Additional Info backward compatibility.
+
+The current model uses "@XmlElementWrapper(name="messageDetails")" with a list of messageMappingEntry objects.
+
+Verify that this exactly matches the real sample structure rather than assuming that it does.
+
+Do not reuse the old shared address DTO.
+
+5. Check actual staging activation
+
+The current configuration appears to default to:
+
+mlv.staging.enabled=false
+
+Confirm the intended activation path.
+
+Explicitly establish:
+
+- Whether incoming XML is only parsed or actually staged under the current DEV configuration.
+- How IncomingStaticMessageStagingDao is injected.
+- How the metadata provider is enabled.
+- Which approved metadata values are needed.
+- Whether staging failures correctly propagate.
+
+Do not enable live staging with invented metadata values.
+
+Search the three repositories, deployment config, mapping documents and authorized DEV reference data before concluding that Mohan's input is required.
+
+6. Testing
+
+Run targeted tests after any justified corrections.
+
+At minimum:
+
+- Java compilation.
+- Customer Message Address JAXB parsing.
+- Customer Additional Info regression tests.
+- DAO binding and error-handling tests.
+- Unicode XML chunking tests.
+- MLVProcessor tests.
+- MLVStaticReceiver tests.
+- Relevant Spring configuration tests.
+
+Attempt a controlled actual DEV startup with existing approved settings.
+
+Only attempt a live MQ publish when the DEV queue manager, listener, queue and authorization are confirmed.
+
+Only verify Oracle staging when approved metadata is available.
+
+Do not use real business messages or perform destructive testing.
+
+If the full TestNG worker/socket failure persists, report it separately from passing targeted tests.
+
+7. Modification rules
+
+You may make minimal corrections for confirmed defects.
+
+Do not:
+
+- Perform broad refactoring.
+- Rebuild already working classes.
+- Add unrelated utilities.
+- Change production or SIT environment settings.
+- Invent staging business codes.
+- Modify Oracle objects.
+- Commit or push.
+- Delete uncertain pre-existing developer changes.
+- Change shared JMS behavior unless necessary and verified.
+
+I do not want a mandatory full-repository backup workflow. Respect the existing working tree, inspect diffs before edits, and avoid destructive bulk operations.
+
+If an uncertain change would require destructive reversal, leave it untouched and report it.
+
+8. Final report
+
+Provide:
+
+1. Confirmed defects — actual issues supported by source or test evidence.
+2. Changes made — exact filenames and why each was necessary.
+3. Changes intentionally preserved — particularly the Jira POJOs, staging DAO and shared integration.
+4. Unrelated changes removed — if any.
+5. Application startup result — including whether MLVStaticReceiver initializes.
+6. MQ and Oracle integration results — distinguish PASS, FAIL, BLOCKED and NOT RUN.
+7. PR file list — the exact source changes belonging to Jira C166472-43178.
+8. Remaining Mohan/deployment-team questions — only if genuinely unresolved.
+
+Main objective: finish and verify the existing implementation with the smallest justified changes, not produce another large batch of edits.
+
+
+
+&&&&&&&&&&&&&&&&
 QFXLM — Recover, Clean Up, Complete and Verify Jira C166472-43178
 
 YOUR ROLE AND OBJECTIVE
