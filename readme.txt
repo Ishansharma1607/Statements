@@ -1,3 +1,23 @@
+Please summarize your complete 850-line investigation into a structured technical handoff report of approximately 150–250 lines.
+
+Preserve all critical findings, including:
+
+1. Verified Java and DB repository architecture.
+2. Exact staging stored procedure signature, Oracle types, and parameter mappings.
+3. Current MLV receiver, processor, and XML parsing flow.
+4. Required Java file changes, with class names and paths.
+5. Git conflicts, duplicate Flexstatic classes, and reverted DTO changes.
+6. Oracle collection binding and XML fragmentation requirements.
+7. Transaction handling, JMS acknowledgement, and error handling.
+8. Compilation/test issues and Dev database blockers.
+9. Confirmed facts versus assumptions.
+10. Proposed implementation sequence and essential questions for Mohan.
+
+Important correction: Mohan has already instructed us to create NEW Customer Message Address-specific POJOs, without modifying existing AddressDetails or MessageDetails. We must reuse Karthik's merged Flexstatic and safely remove the duplicate Copilot-created version.
+
+Do not investigate again or modify code. Summarize only your existing findings, preserving exact procedure names, parameter names, Oracle types, and important file references. Do not invent missing information.
+----++++
+
 QFXLM — Full Cross-Repository Investigation (READ ONLY)
 
 I am providing access to two repositories:
