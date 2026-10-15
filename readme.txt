@@ -1,3 +1,35 @@
+Please perform a final READ-ONLY code review of your completed implementation for Jira C166472-43178.
+
+Do not modify any files yet.
+
+Review the actual Git diff and implementation, not just your previous summary.
+
+Verify:
+
+1. Karthik's shared Flexstatic is preserved and the duplicate is removed.
+2. Existing AddressDetails and MessageDetails are not changed by this implementation.
+3. The new Customer Message Address JAXB models match the supplied XML.
+4. The Oracle staging DAO correctly binds all 11 parameters, including the Oracle collection, OUT parameters, and optional values.
+5. XML chunking preserves all content and meets Oracle VARCHAR2(4000 CHAR) limits.
+6. Spring datasource and transaction handling are correct.
+7. JMS listener failures are propagated correctly without claiming unverified retry or acknowledgement behavior.
+8. Staging-disabled behavior is intentional and existing parsing remains functional.
+9. The staging DAO is genuinely reusable for other MLV XML types.
+10. All modified and untracked files are necessary, and no unrelated changes would be included in the commit.
+
+Identify any bugs, incorrect assumptions, missing tests, or overengineering.
+
+Return a concise review with:
+
+- PASS / ISSUE / UNVERIFIED for each area.
+- Exact file and method for each issue.
+- Severity: blocker, important, or minor.
+- Required corrections.
+- What remains blocked by Dev database or business configuration.
+
+Do not make changes until I approve the corrections.
+-------
+
 Implement the QFXLM Customer Message Address MLV integration for Jira C166472-43178, following today's completed cross-repository investigation and Mohan's meeting instructions.
 
 Repositories
