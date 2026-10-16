@@ -1,3 +1,21 @@
+I have manually started the main QFXLM static application from IntelliJ using the existing DEV configuration.
+
+The application successfully reports "Started Application". MQ and MLV listener flags are enabled, but I cannot find the previously reported MQRC 2035 error in the logs.
+
+Please investigate this discrepancy in READ-ONLY mode.
+
+1. Inspect the actual IntelliJ run configuration, active Spring profiles and effective non-secret MQ properties.
+2. Verify whether ibmMQListenerContainerFactory and MLVStaticReceiver are instantiated.
+3. Determine whether the @JmsListener container is actually running and attempting an MQ connection.
+4. Check relevant application logs for JMS/MQ connection successes, failures, recovery attempts and authorization errors.
+5. Compare this configuration with the previous diagnostic that reported MQRC 2035.
+6. Determine whether MQ connectivity is genuinely established, the connection hasn't been attempted, or the error is logged elsewhere.
+7. Do not publish messages, change credentials, modify source/configuration, or commit anything.
+
+Report the exact evidence and whether the earlier MQ authorization blocker is still reproducible.
+
+
+-----------------------
 Hi Mohan, I've completed the Customer Message Address XML parsing and common staging DAO implementation. The build and unit tests are passing.
 
 While doing DEV integration testing, I need two clarifications:
