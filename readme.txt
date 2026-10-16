@@ -1,3 +1,42 @@
+I'm working on Jira C166472-43178 in the main QFXLM static Java application.
+
+Please first read the local ".github/copilot-instructions.md" for project context, DEV startup instructions, and repository locations. You also have access to the demo project and relevant skills.
+
+Current situation:
+
+- The Customer Message Address XML implementation and common staging DAO are already implemented.
+- The main application starts successfully from IntelliJ using the existing DEV configuration.
+- "mq.enabled=true" and "mlv.static.enabled=true".
+- The DEV configuration specifies queue "QFXLM.PORTAL_TO_QFXSTATIC.INTERNAL_01".
+- A previous diagnostic reported IBM MQ error 2035 (NOT_AUTHORIZED).
+- However, I have just started the application manually in IntelliJ and cannot find any MQRC error in the logs.
+
+Your task: READ-ONLY investigation only.
+
+1. Inspect the actual IntelliJ run configuration, active Spring profiles and effective MQ properties.
+2. Verify whether "MLVStaticReceiver" and "ibmMQListenerContainerFactory" initialize.
+3. Determine whether the MLV JMS listener has actually established a connection to DEV MQ.
+4. Search the relevant logs for successful connections, authorization failures, JMS exceptions and recovery attempts.
+5. Investigate why the previous diagnostic reported 2035 but my current application startup does not.
+6. Check whether the actual listener is running, disabled, waiting, reconnecting or successfully connected.
+7. Clearly distinguish successful Spring Boot startup from successful MQ connectivity.
+
+Restrictions:
+
+- Do not modify source code or configuration.
+- Do not change credentials or MQ security settings.
+- Do not publish or consume test messages.
+- Do not commit, revert or delete anything.
+- Do not expose credentials.
+
+Final answer:
+
+Tell me whether DEV MQ connectivity is CONFIRMED, FAILED or NOT VERIFIED, with specific evidence.
+
+If more testing is required, explain the exact next step without performing it.
+
+
+-----____++++
 I have manually started the main QFXLM static application from IntelliJ using the existing DEV configuration.
 
 The application successfully reports "Started Application". MQ and MLV listener flags are enabled, but I cannot find the previously reported MQRC 2035 error in the logs.
