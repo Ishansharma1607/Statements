@@ -1,3 +1,16 @@
+Hi Mohan, I've completed the staging implementation changes and verified the Java-side tests.
+
+During DEV database verification, I found two blockers:
+
+1. The approved STATIC_TYPE "MLV_CUST_MSG_ADDR" is 17 characters, but "QLM_INCOMING_STATIC_MSG.STATIC_TYPE" is VARCHAR2(15).
+2. "PKG_QLM_INCOMING_STATIC_MSG" package specification is VALID, but its package body is INVALID in DEV.
+
+Could you please confirm whether we should update the column/procedure contract or use another approved static type, and whether the package body can be recompiled/fixed?
+
+MQ testing is still pending due to the 2035 access issue.
+---₹-₹-₹-₹-₹-₹-
+
+
 I want to revisit the "AddressDetails.java" investigation because your previous conclusion may be based on an incorrect assumption.
 
 You said the 16 additional fields in the shared "AddressDetails.java" were present before the latest staging implementation.
