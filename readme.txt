@@ -1,3 +1,155 @@
+
+TASK: Recompile Invalid Oracle Package Body in DEV — Execution Authorized
+
+Jira: C166472-43178
+
+Mohan explicitly instructed me to recompile the invalid Oracle package body in DEV. If compilation fails, he asked me to contact Thendral for assistance.
+
+IMPORTANT: I AUTHORIZE YOU TO EXECUTE THE REQUIRED PACKAGE-BODY RECOMPILATION COMMAND DIRECTLY IN THE DEV DATABASE. DO NOT STOP TO ASK ME FOR ADDITIONAL APPROVAL FOR THIS SPECIFIC OPERATION.
+
+The database skill/instruction document I previously created contains a general read-only preference. For this task, I am explicitly overriding that preference for the authorized DEV package-body recompilation and its verification.
+
+This authorization does not override actual database privileges, organizational access controls, or restrictions outside this task.
+
+1. Target database object
+
+Environment: DEV only
+
+Schema: "QLM_OWNER"
+
+Package: "PKG_QLM_INCOMING_STATIC_MSG"
+
+Previous verification showed:
+
+- Package specification: VALID
+- Package body: INVALID
+
+Mohan has also confirmed the updated staging metadata:
+
+- STATIC_TYPE = "MLV_CUSMSG_ADR"
+- IN_OR_OUT = "I"
+- SOURCE_SYSTEM = "MLV"
+- MSG_STATUS = SQL NULL
+
+The Java metadata correction is a separate task; do not modify Java files in this database task.
+
+2. Verify DEV environment
+
+Use the existing configured DEV Oracle connection.
+
+Before executing the recompilation:
+
+1. Verify the connection targets DEV and the expected schema.
+2. Check the package specification and package body statuses.
+3. Retrieve any existing compilation errors.
+4. Inspect relevant invalid dependencies if needed.
+
+Run:
+
+SELECT object_name, object_type, status
+FROM all_objects
+WHERE owner = 'QLM_OWNER'
+  AND object_name = 'PKG_QLM_INCOMING_STATIC_MSG';
+
+Check compilation errors:
+
+SELECT line, position, text
+FROM all_errors
+WHERE owner = 'QLM_OWNER'
+  AND name = 'PKG_QLM_INCOMING_STATIC_MSG'
+  AND type = 'PACKAGE BODY'
+ORDER BY sequence;
+
+If you cannot reliably confirm that the connection is DEV, stop and report the uncertainty. Never execute this operation in SIT, UAT, or PROD.
+
+3. EXECUTE THE PACKAGE-BODY RECOMPILATION
+
+Once DEV is positively confirmed, execute the following statement directly:
+
+ALTER PACKAGE QLM_OWNER.PKG_QLM_INCOMING_STATIC_MSG COMPILE BODY;
+
+You have my explicit authorization to execute this command in DEV without asking me again.
+
+Do not stop after displaying the SQL statement.
+
+Do not simply tell me to execute it manually.
+
+Execute it through the existing authorized Oracle connection, then inspect its result.
+
+If database privileges prevent execution, report the exact permission error. Do not attempt to bypass access controls.
+
+4. Verify compilation result
+
+Immediately after execution, run:
+
+SELECT object_name, object_type, status
+FROM all_objects
+WHERE owner = 'QLM_OWNER'
+  AND object_name = 'PKG_QLM_INCOMING_STATIC_MSG';
+
+Then:
+
+SELECT line, position, text
+FROM all_errors
+WHERE owner = 'QLM_OWNER'
+  AND name = 'PKG_QLM_INCOMING_STATIC_MSG'
+  AND type = 'PACKAGE BODY'
+ORDER BY sequence;
+
+Verify:
+
+1. Package specification is VALID.
+2. Package body is VALID.
+3. No unresolved compilation errors remain.
+
+If the body remains INVALID, retrieve and analyze the exact compilation errors and identify the failing line numbers, dependencies, or missing objects.
+
+Do not automatically modify package source code or database tables to resolve compilation failures.
+
+Mohan specifically requested recompilation first and instructed me to seek Thendral's help if errors remain.
+
+5. Scope and safety
+
+Authorized:
+
+- Read-only inspection of DEV Oracle metadata.
+- Executing the specified ALTER PACKAGE COMPILE BODY statement in DEV.
+- Reading package compilation errors and dependency information.
+- Rechecking object status after recompilation.
+
+Not authorized in this task:
+
+- Replacing or changing package source code.
+- Modifying package specifications.
+- Altering database tables or columns.
+- Running INSERT, UPDATE, DELETE, TRUNCATE, or DROP statements.
+- Calling business procedures or inserting test staging data.
+- Changing objects in other environments.
+- Modifying Java repository code.
+- Committing or pushing files.
+
+Do not execute broader schema-wide recompilation commands.
+
+6. Final report
+
+After completing the operation, provide:
+
+1. DEV connection verification.
+2. Package specification status before and after.
+3. Package body status before and after.
+4. Exact SQL recompilation command executed.
+5. Oracle execution result.
+6. Any remaining compilation errors.
+7. Whether the package is now ready for subsequent integration testing.
+8. Whether Thendral's assistance is still required.
+
+Clearly distinguish successful recompilation from successful execution of the staging procedure.
+
+Begin the verification and execute the DEV package-body recompilation automatically once the environment is confirmed. Do not request another approval for this authorized operation.
+
+
+-----+++++++++++++-----
+
 Mohan has provided an updated and final STATIC_TYPE value for Jira C166472-43178.
 
 Please update the existing Customer Message Address staging implementation as follows:
