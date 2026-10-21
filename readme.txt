@@ -1,3 +1,22 @@
+Mohan has provided an updated and final STATIC_TYPE value for Jira C166472-43178.
+
+Please update the existing Customer Message Address staging implementation as follows:
+
+1. Replace "MLV_CUST_MSG_ADDR" with the newly approved "MLV_CUSMSG_ADR" everywhere it is used for this message type, including Java metadata and relevant tests.
+2. Confirm that "MLV_CUSMSG_ADR" fits the DEV Oracle "VARCHAR2(15)" contract.
+3. Preserve "IN_OR_OUT = I", "SOURCE_SYSTEM = MLV", and "MSG_STATUS = SQL NULL".
+4. Search for any remaining references to the obsolete value and report them.
+5. Run focused metadata, StoredProcedure, and staging tests.
+6. Do not modify Oracle schemas or packages during this task.
+7. Preserve all other completed changes and local-only configuration.
+8. Do not commit, push, or create a PR.
+
+Also report the current state of the shared "AddressDetails.java". If its previously identified 18 uncommitted additions have not yet been selectively cleaned up, do not automatically overwrite them; report their status separately.
+
+Provide the exact files changed, test results, and remaining blockers.
+
+--+++++++-+-+-
+
 The latest audit provides sufficient evidence that the 18 uncommitted fields in the shared "AddressDetails.java" are probably leftovers from our earlier Customer Message Address implementation.
 
 Please now perform the following focused cleanup.
