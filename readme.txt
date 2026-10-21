@@ -1,3 +1,31 @@
+I want to revisit the "AddressDetails.java" investigation because your previous conclusion may be based on an incorrect assumption.
+
+You said the 16 additional fields in the shared "AddressDetails.java" were present before the latest staging implementation.
+
+However, we have used MULTIPLE Copilot Agent sessions for Jira C166472-43178.
+
+An earlier Copilot session may have added those fields while initially implementing the Customer Message Address XML mapping. A newer session would then incorrectly consider them pre-existing changes.
+
+Mohan explicitly instructed us to avoid modifying the existing shared "AddressDetails.java" and use a dedicated Customer Message Address DTO instead.
+
+Please investigate:
+
+1. Compare the shared "AddressDetails.java" with Git HEAD and the original repository implementation.
+2. Identify all 16 added fields.
+3. Search the entire repository for references to those fields, including JAXB mapping, cache/export functionality, tests, and other modules.
+4. Determine whether those fields are actually required by existing functionality or were likely introduced specifically for our Customer Message Address task.
+5. Compare the fields against "CustomerMessageAddressDetails.java" and the actual sample XML.
+6. Identify any required XML fields missing from the dedicated DTO.
+7. Determine whether removing the 16 additions from the shared class would affect existing functionality.
+8. Explain which fields should remain, which are redundant, and whether any need to be represented in the dedicated DTO.
+
+IMPORTANT: Do not claim these fields are unrelated merely because they existed before your current Copilot session. Git cannot reliably establish the authorship or intent of uncommitted changes.
+
+For now, do a READ-ONLY investigation. Do not modify or revert files.
+
+Give me your recommendation for safely restoring the shared DTO to its intended state while preserving any legitimate unrelated work.
+&_____₹___₹₹₹₹₹
+
 TASK: Final Read-Only Audit — QFXLM Customer Message Address Staging
 
 Jira: C166472-43178
