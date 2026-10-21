@@ -1,3 +1,37 @@
+The latest audit provides sufficient evidence that the 18 uncommitted fields in the shared "AddressDetails.java" are probably leftovers from our earlier Customer Message Address implementation.
+
+Please now perform the following focused cleanup.
+
+Goal: Restore the shared "AddressDetails.java" to its original Git HEAD structure while preserving the dedicated Customer Message Address implementation.
+
+Instructions
+
+1. First verify once more that the shared "AddressDetails.java" contains only the 18 extra field/annotation pairs as its current uncommitted modifications.
+2. Confirm that no current code or tests depend on those additional fields.
+3. Preserve a recoverable copy or patch of the existing shared DTO changes before removing them, without staging or committing anything.
+4. Selectively remove ONLY those 18 uncommitted additions from "AddressDetails.java", restoring its original 19-field structure.
+5. Preserve "CustomerMessageAddressDetails.java" and all other dedicated Customer Message Address POJOs unchanged.
+6. Do not transfer fields into the dedicated DTO unless comparison with the actual sample XML proves that a necessary element is missing.
+7. Do not modify unrelated files or existing application functionality.
+8. Do not use a blanket Git reset, clean, or repository-wide restore operation.
+9. Verify "AddressDetails.java" now has no Git diff against HEAD.
+10. Run compilation and focused regression tests covering shared DTO mapping, Customer Message Address JAXB parsing, and the MLV staging flow.
+
+If the final verification reveals any consumer of these 18 shared fields or any non-field changes in "AddressDetails.java", STOP and report before changing the file.
+
+Final report
+
+Tell me:
+
+- Which 18 field/annotation pairs were removed.
+- Whether "AddressDetails.java" matches Git HEAD exactly.
+- Whether the dedicated Customer Message Address mapping remains intact.
+- Which tests passed or failed.
+- Whether any other files were modified.
+
+Do not commit, push, raise a PR, alter local DB password configuration, or perform live MQ/Oracle operations.
+&&&&_&__&__&__
+
 Hi Mohan, I've completed the staging implementation changes and verified the Java-side tests.
 
 During DEV database verification, I found two blockers:
