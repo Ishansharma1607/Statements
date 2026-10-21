@@ -1,3 +1,214 @@
+TASK: Final Read-Only Audit — QFXLM Customer Message Address Staging
+
+Jira: C166472-43178
+
+The implementation of Mohan's review changes has been completed locally. Before preparing the staging-only PR, I want a detailed verification of the outstanding issues.
+
+STRICT RULE: READ-ONLY INVESTIGATION.
+
+Do not modify, revert, delete, stage, commit, or push any files. Do not change database objects or execute live MQ tests.
+
+1. Verify the STATIC_TYPE database mismatch
+
+Mohan explicitly confirmed:
+
+- "STATIC_TYPE = MLV_CUST_MSG_ADDR"
+- "IN_OR_OUT = I"
+- "SOURCE_SYSTEM = MLV"
+- "MSG_STATUS = SQL NULL"
+
+Your previous implementation report identified a potential mismatch:
+
+- "MLV_CUST_MSG_ADDR" contains 17 characters.
+- The existing Oracle staging column and procedure parameter reportedly support only 15 characters.
+
+Please:
+
+1. Locate the exact table definition and stored-procedure parameter declaration.
+2. Provide the file paths and line numbers proving the 15-character limit.
+3. If permitted, verify the actual DEV database definition using read-only queries.
+4. Confirm whether the current Java implementation rejects the value before calling Oracle.
+5. Explain what happens if we try to stage this message with the current implementation.
+6. Identify safe resolution options.
+
+Do not truncate the value, invent an alternative static type, or modify the schema.
+
+2. Audit AddressDetails.java — IMPORTANT MOHAN REVIEW REQUIREMENT
+
+Mohan specifically said that the existing shared "AddressDetails.java" should not be modified just to support Customer Message Address XML.
+
+We created a dedicated class:
+
+"CustomerMessageAddressDetails.java"
+
+However, I can still see changes in the shared "AddressDetails.java" in IntelliJ's Git diff, including additional fields such as:
+
+- "counterparty1"
+- "counterparty2"
+- "gcnMappingBic"
+- "activeFlag"
+
+There may be other fields as well.
+
+Please investigate:
+
+1. Locate the existing shared "AddressDetails.java" and dedicated "CustomerMessageAddressDetails.java".
+2. Compare their properties, JAXB annotations, and dependencies.
+3. Search the entire Customer Message Address implementation for references to the shared "AddressDetails.java".
+4. Verify that the Customer Message Address XML is parsed using the dedicated DTO, not the shared one.
+5. Compare the DTO against the actual sample XML.
+6. Verify that all required fields and repeated elements are correctly mapped.
+7. Determine whether the modifications to shared "AddressDetails.java" belong to this Jira or were already present before our changes.
+8. Use Git history, current diffs, and any available evidence. Do not guess who introduced them.
+9. Confirm whether we can exclude "AddressDetails.java" entirely from the staging-only PR without breaking compilation or XML functionality.
+10. Check whether other message types use the shared DTO and could be affected by those modifications.
+
+Do not revert or remove the additional fields during this audit.
+
+If they are unrelated pre-existing changes, recommend leaving the working-tree file untouched and excluding it from the PR.
+
+If our implementation still depends on the shared DTO, clearly identify the references and explain the minimal correction required, but do not implement it yet.
+
+3. Verify the Spring StoredProcedure implementation
+
+Inspect:
+
+- "IncomingStaticMessageStagingDao.java"
+- "IncomingStaticMessageStagingProcedure.java"
+- Related tests and metadata classes
+
+Confirm:
+
+1. The procedure class correctly extends Spring's "StoredProcedure".
+2. The implementation follows Mohan's reference in "CloudAmcCustomerDao.java".
+3. All 11 procedure parameters are correctly declared and ordered.
+4. IN/OUT parameter names and SQL types match the actual Oracle contract.
+5. Oracle STRUCT/ARRAY creation is correct.
+6. XML chunking and ordering are preserved.
+7. Errors propagate correctly.
+8. No output identifier is fabricated.
+
+Distinguish mocked test coverage from actual Oracle execution.
+
+4. Verify the receiver and processor architecture
+
+Inspect:
+
+- "MLVStaticReceiver.java"
+- "MLVProcessor.java"
+- Related Spring configuration and tests
+
+Confirm:
+
+1. Receiver only receives the JMS message and submits the processor.
+2. DAO and metadata-provider dependencies are not injected into the receiver.
+3. "MLVProcessor" implements "Runnable".
+4. Each incoming message receives an independent processor instance.
+5. Spring annotations correctly register the components.
+6. No unnecessary Jira-specific bean declaration remains in Spring XML.
+7. "Future.get()" or equivalent handling preserves expected exception propagation.
+8. No unintended JMS acknowledgement or retry regression has been introduced.
+
+Compare with Mohan's FT Core reference:
+
+https://github.com/CitiInternalLS4/180228.qfxlm3.qfxlm-ftcore
+
+Do not modify any implementation during this audit.
+
+5. Investigate the incomplete regression test run
+
+Your previous report stated:
+
+- Compilation passed.
+- Targeted tests passed.
+- The full TestNG suite reached approximately 543 completed tests.
+- The Gradle worker connection then failed before completion.
+
+Please determine:
+
+1. Whether this was a test failure, Gradle worker crash, or environment/resource problem.
+2. Which tests actually passed.
+3. Which tests were never completed.
+4. Whether any production-code regression is indicated.
+5. Whether the full suite can be rerun safely without changing production code.
+
+You may run read-only build and test commands that do not write to DEV MQ or Oracle.
+
+Report actual results and do not count incomplete test runs as passed.
+
+6. Audit the Git diff and PR scope
+
+Inspect all modified, added, and untracked files.
+
+Classify them into:
+
+A. Include in Jira C166472-43178 staging PR
+
+Only required Customer Message Address XML staging implementation and tests.
+
+B. Exclude from PR / preserve locally
+
+Examples:
+
+- Shared "AddressDetails.java" modifications unrelated to this Jira.
+- Local "DB_PASS" workaround.
+- Local Spring configuration modifications unrelated to staging.
+- MQ logs.
+- Temporary/generated files.
+- Unrelated existing changes.
+
+C. Defer to a separate branch
+
+- Customer Message Address main-table wrapper procedure.
+- Business-table persistence.
+- Other future enhancements.
+
+Inspect mixed-change files carefully and identify exact relevant versus unrelated hunks.
+
+Do not run blanket Git reset/restore commands.
+
+Do not modify the working tree.
+
+7. Final report format
+
+Provide these sections:
+
+A. STATIC_TYPE database contract
+
+Evidence, exact declarations, runtime impact, and approved resolution options.
+
+B. AddressDetails.java investigation
+
+Exact modified fields, Git evidence, DTO references, whether the dedicated DTO is complete, and whether the shared file can safely be excluded.
+
+C. StoredProcedure verification
+
+Correctness, remaining risks, and test evidence.
+
+D. Receiver/processor verification
+
+Spring bean wiring, concurrency isolation, exception handling, and adherence to Mohan's reference.
+
+E. Regression testing
+
+Commands, number of tests completed, failures, incomplete tests, and worker termination findings.
+
+F. PR file classification
+
+Exact files to include, exclude, or defer.
+
+G. Outstanding blockers
+
+Include the "STATIC_TYPE" length mismatch, pending DEV MQ authorization/CMP issue, missing XML mapping workbook if still unavailable, and any incomplete tests.
+
+H. Final recommendation
+
+State whether we can prepare a draft staging-only PR, what must be resolved before merging, and which exact action I should take next.
+
+Remember: this is a READ-ONLY audit. Do not change source code, database definitions, credentials, MQ configuration, or Git history.
+-----#######------
+
+
 TASK: Implement All Mohan Review Changes — QFXLM Customer Message Address XML Staging
 
 1. Objective and current status
