@@ -1,4 +1,19 @@
+The DEV Oracle package body recompilation succeeded, and both package specification and body are now VALID.
 
+Mohan has already approved the replacement STATIC_TYPE value "MLV_CUSMSG_ADR" (14 characters), so the previous 17-versus-15-character mismatch can be resolved without changing the database schema.
+
+Please:
+
+1. Check whether "MLVProcessor.java" and all related staging metadata use "MLV_CUSMSG_ADR".
+2. If the old value "MLV_CUST_MSG_ADDR" remains, replace it with the approved value in the relevant Java code and tests.
+3. Preserve "IN_OR_OUT=I", "SOURCE_SYSTEM=MLV", and "MSG_STATUS=SQL NULL".
+4. Run focused compilation, metadata, XML staging, and StoredProcedure tests.
+5. Verify "AddressDetails.java" still matches Git HEAD.
+6. Report any remaining blockers and whether the staging-only code is ready for manual PR review.
+
+Do not modify Oracle objects again, attempt MQ integration testing, change local DB password configuration, commit, or push.
+
+------------
 TASK: Recompile Invalid Oracle Package Body in DEV — Execution Authorized
 
 Jira: C166472-43178
