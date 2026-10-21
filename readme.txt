@@ -1,3 +1,679 @@
+TASK: Implement All Mohan Review Changes — QFXLM Customer Message Address XML Staging
+
+1. Objective and current status
+
+I am working on Jira C166472-43178 in the QFXLM static Java application.
+
+The initial Customer Message Address XML processing and staging implementation already exists, but Mohan reviewed it and requested architectural changes.
+
+Your task is to inspect the existing code, study Mohan's exact reference implementations, implement all outstanding review changes, run all feasible local and isolated tests, and prepare a clean staging-only PR.
+
+This is an implementation task, not merely a code review.
+
+Important current status:
+
+- The initial Java implementation has already been written.
+- Earlier Gradle compilation and unit tests reportedly passed, but rerun relevant checks after the refactoring.
+- DEV MQ connectivity remains blocked by "MQRC_NOT_AUTHORIZED (2035)".
+- Mohan identified a possible whitelisting/access requirement.
+- The CMP approval is pending.
+- Even after approval, successful MQ connectivity is not yet guaranteed.
+- Do not attempt live MQ testing for this task.
+- Another teammate may help with authorized message publishing later.
+- There are local configuration changes and unrelated Git modifications that must not be lost or accidentally included in the PR.
+
+Do not commit, push, create a PR, alter MQ security settings, or perform live Oracle staging inserts without my approval.
+
+2. Repositories — critical references
+
+Main implementation repository
+
+"qfxlmqfxstatic"
+
+Only modify this repository.
+
+Reference repository A — Spring StoredProcedure
+
+Repository:
+
+"180228.qfxlm.qfxlm-customer-service"
+
+Exact reference from Mohan:
+
+https://github.com/CitiInternal/180228.qfxlm.qfxlm-customer-service/blob/main/src/main/java/com/citi/qlm/customer/service/dao/cloudamccustomer/CloudAmcCustomerDao.java
+
+Mohan demonstrated the StoredProcedure pattern from this DAO.
+
+Find the implementation extending:
+
+"org.springframework.jdbc.object.StoredProcedure"
+
+Study its constructor, parameter declarations, compilation, execution, and use from the DAO.
+
+Reference repository B — Exact FT Core receiver/processor reference
+
+Mohan has now explicitly confirmed this repository:
+
+https://github.com/CitiInternalLS4/180228.qfxlm3.qfxlm-ftcore
+
+Search this repository for:
+
+- "FTCoreReceiveProcess.java"
+- "FTDealMessageReceiver.java"
+- The actual "FTDeal" message receiver and processor classes, if their names differ
+- "QFXLMExecutorService"
+- "ApplicationContext.getBean()"
+- Processor annotations and scope
+- The Runnable/executor integration
+
+Mohan demonstrated this exact architecture during the review.
+
+This is the primary reference for "MLVStaticReceiver" and "MLVProcessor".
+
+Reference repository C — Secondary reference
+
+"mmrouter"
+
+Mohan separately mentioned that the "mmrouter" repository could also be used to understand receiver-to-processor injection.
+
+Refer to it only if useful. The explicitly shared FT Core repository takes priority.
+
+Before editing
+
+1. Read ".github/copilot-instructions.md", if present.
+2. Inspect the current branch and "git status".
+3. Inspect current changes relative to the intended base branch.
+4. Find the existing Jira implementation and associated tests.
+5. Read the exact StoredProcedure reference.
+6. Read the FT Core receiver and processor implementation.
+7. Inspect the sample Customer Message Address XML and any field-mapping Excel attachment available locally.
+8. Inspect current Spring, JMS, executor, and Oracle integration conventions.
+
+If reference code is unavailable, report exactly what could not be accessed. Do not pretend to have read it.
+
+Provide a short implementation plan and proceed.
+
+3. Requirement A — Refactor the common staging DAO using Spring StoredProcedure
+
+Current class:
+
+"IncomingStaticMessageStagingDao.java"
+
+The current implementation uses direct JDBC procedure invocation with a call string and "CallableStatement" or similar approach.
+
+Mohan explicitly instructed us to replace that approach with Spring's built-in StoredProcedure abstraction.
+
+Required change
+
+Create a separate Java class extending:
+
+"org.springframework.jdbc.object.StoredProcedure"
+
+Use the exact "CloudAmcCustomerDao.java" reference as the primary example.
+
+The class must:
+
+- Have an appropriate constructor.
+- Use the application's existing Spring JDBC configuration.
+- Set the correct stored-procedure name.
+- Declare all IN and OUT parameters.
+- Use the correct SQL parameter names, types, and order.
+- Compile the StoredProcedure definition.
+- Expose an appropriate execution method.
+- Handle output parameters and error reporting properly.
+- Support the existing Oracle collection and record parameter types.
+
+Existing procedure:
+
+"QLM_OWNER.PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg"
+
+Known Oracle types:
+
+- "QLM_OWNER.REC_INCOMING_STATIC_MSG"
+- "QLM_OWNER.TAB_INCOMING_STATIC_MSG"
+
+The previous implementation expected an 11-parameter procedure contract. Verify the exact contract against available database definitions or existing source. Do not guess.
+
+Update the DAO
+
+Refactor "IncomingStaticMessageStagingDao" to use the separate StoredProcedure implementation.
+
+Preserve:
+
+- Common/reusable DAO architecture.
+- Original XML contents.
+- Unicode-safe XML chunking.
+- The applicable Oracle 4,000-character limits.
+- Fragment ordering and sequence numbers.
+- Oracle STRUCT/ARRAY mappings.
+- Connection and resource handling.
+- Output/error handling.
+- Existing behavior for other supported MLV messages.
+
+Do not create a new Oracle stored procedure or modify an existing Oracle package.
+
+Do not fabricate a returned message identifier if the procedure does not return one.
+
+Keep the StoredProcedure implementation in a separate Java class, as Mohan instructed.
+
+4. Requirement B — Correct the Customer Message Address POJOs
+
+The incoming XML has a structure approximately resembling:
+
+"flexstatic → customerMessageAddress → addressDetails → messageDetails → messageMappingEntry"
+
+Verify the exact structure, field names, attributes, collections, and element nesting from the original sample XML.
+
+Previously created DTOs include:
+
+- "CustomerMessageAddress.java"
+- "CustomerMessageAddressDetails.java"
+- "CustomerMessageAddressMappingEntry.java"
+
+Also inspect:
+
+- "CustomerMessageAddressXmlReader.java"
+- The existing "Flexstatic.java"
+- Related JAXB parser classes
+- Existing shared "AddressDetails.java"
+- Existing shared "MessageDetails.java"
+
+Mohan's instructions
+
+He pointed out that "AddressDetails.java" already exists elsewhere.
+
+He said the new Customer Message Address data can be represented using:
+
+1. Dedicated names such as "CustomerMessageAddressDetails", or
+2. Separate packages that clearly distinguish the DTO types.
+
+Prefer retaining the dedicated DTOs already created, unless the actual reference structure requires a correction.
+
+Do not unnecessarily modify the shared "AddressDetails.java" or "MessageDetails.java".
+
+Preserve pre-existing local changes in those shared classes and exclude unrelated changes from this Jira's PR.
+
+Do not duplicate the JAXB root "Flexstatic.java".
+
+Add or retain only the required "customerMessageAddress" mapping in the existing root.
+
+Validate all mappings against the sample XML, including repeated "messageMappingEntry" elements.
+
+Run a real JAXB parsing test using the sample XML.
+
+5. Requirement C — Simplify XML parsing and staging
+
+Mohan explained that an XML conversion failure already throws an exception, so redundant post-parsing checks are unnecessary.
+
+Expected flow:
+
+1. Receive XML.
+2. Send XML to the processor.
+3. Convert/unmarshal XML into the appropriate POJOs.
+4. If parsing fails, throw or propagate the exception.
+5. If parsing succeeds, invoke the common staging DAO.
+6. Stage the original XML and required metadata.
+
+Avoid redundant validation that merely repeats guarantees already enforced by the parser.
+
+However, successful JAXB parsing does not necessarily guarantee all mandatory business fields are present. Preserve essential checks that are not enforced by unmarshalling.
+
+Do not accidentally weaken message-type validation or break other supported MLV static-message types.
+
+Mohan also mentioned that after staging, "customerMessageAddress" can be identified and routed to a separate business wrapper procedure.
+
+That business procedure is not part of this PR.
+
+Do not implement or invoke the future main-table wrapper in the current change.
+
+6. Requirement D — Make MLVStaticReceiver a lightweight JMS receiver
+
+Current class:
+
+"MLVStaticReceiver.java"
+
+Follow the exact receiver-to-processor pattern from:
+
+https://github.com/CitiInternalLS4/180228.qfxlm3.qfxlm-ftcore
+
+Mohan explained that the JMS receiver should only:
+
+1. Receive the JMS message.
+2. Extract its payload.
+3. Obtain the appropriate processor bean.
+4. Set the message on the processor.
+5. Submit the processor to the existing executor service.
+
+The receiver should not execute XML parsing, staging, metadata creation, or database operations itself.
+
+Remove unnecessary injection
+
+The current receiver contains dependencies including:
+
+- "IncomingStaticMessageStagingDao"
+- "MlvIncomingStaticMetadataProvider"
+
+Mohan specifically said these do not belong in the receiver.
+
+Remove them from the receiver after transferring necessary functionality into the processor or related service.
+
+Keep:
+
+- The existing "@JmsListener" annotation.
+- The destination queue.
+- The configured JMS listener container factory.
+- The required "QFXLMExecutorService".
+- Minimal message extraction and handling.
+- Necessary logs and exception behavior.
+
+Follow the actual FT Core reference when obtaining a processor bean, including "ApplicationContext.getBean()" if that is its established convention.
+
+Do not introduce a new executor framework.
+
+Do not change queue configuration or shared MQ infrastructure.
+
+7. Requirement E — Refactor MLVProcessor to the FT Core Runnable pattern
+
+Current class:
+
+"MLVProcessor.java"
+
+This is one of Mohan's most important architectural requests.
+
+He demonstrated an intermediate processing class in the FT Core implementation.
+
+Study the exact reference
+
+In:
+
+"180228.qfxlm3.qfxlm-ftcore"
+
+Locate "FTCoreReceiveProcess" and inspect:
+
+- How it implements "Runnable".
+- Which Spring annotations are applied.
+- Whether it uses "@Service", "@Component", "@Scope", or another registration mechanism.
+- How message payloads are passed into it.
+- How dependency injection works.
+- How the receiver obtains each processor.
+- How the executor starts the processor.
+- How exceptions and transaction handling work.
+
+Implement the corresponding pattern in "MLVProcessor".
+
+Required processor behavior
+
+- Implement "Runnable".
+- Accept an incoming XML message using a property/setter or an equivalent verified pattern.
+- Start parsing/staging execution from "run()".
+- Inject the staging DAO and genuinely necessary dependencies inside the processor.
+- Keep parsing, metadata handling, and staging out of "MLVStaticReceiver".
+- Follow the established project's executor usage.
+
+Expected flow:
+
+"JMS Queue"
+→ "MLVStaticReceiver"
+→ "QFXLMExecutorService"
+→ "MLVProcessor.run()"
+→ XML parsing
+→ common staging DAO
+→ Spring StoredProcedure
+→ Oracle staging tables.
+
+Important concurrency requirement
+
+Because the processor may hold a mutable message field, do not use a shared singleton processor across multiple concurrent messages.
+
+Inspect the FT Core reference and follow its per-message instance creation approach.
+
+A prototype-scoped Spring bean may be appropriate, but verify against the reference before selecting the implementation.
+
+Test at least two distinct messages to confirm no message overwrites another.
+
+Important transaction requirement
+
+The current application may use transacted JMS listeners and wait for asynchronous processing completion using "Future.get()" or similar behavior.
+
+Simply replacing this with fire-and-forget "executor.execute()" may acknowledge a message before staging succeeds.
+
+Inspect the existing code and the FT Core reference carefully.
+
+Preserve correct exception propagation and acknowledgement/retry behavior as far as possible.
+
+If strict adherence to Mohan's executor pattern conflicts with current transactional behavior, document the exact conflict and choose the least disruptive safe implementation.
+
+Do not silently swallow exceptions or claim staging succeeded before it actually completed.
+
+8. Requirement F — Use Spring annotations instead of new XML bean declarations
+
+This instruction came directly from Mohan and must not be missed.
+
+Mohan said the new components do not need manual Spring XML bean registration.
+
+He mentioned using "@Service" and annotation-based dependency injection.
+
+Inspect:
+
+- "spring-qas.xml"
+- "spring-qas.properties"
+- "StaticServiceConfiguration.java"
+- "MLVStaticReceiver.java"
+- "MLVProcessor.java"
+- "IncomingStaticMessageStagingDao.java"
+- "MlvIncomingStaticMetadataProvider.java"
+- The new StoredProcedure class
+- Related component-scanning configuration
+
+Use appropriate Spring annotations and injection according to the repository's established conventions:
+
+- "@Service"
+- "@Repository"
+- "@Component"
+- "@Autowired" or constructor injection
+- Correct bean scope, especially for the processor
+
+Existing XML configuration
+
+A previous implementation added a Spring XML bean declaration similar to:
+
+"incomingStaticMessageStagingDao"
+
+in "spring-qas.xml".
+
+Inspect that declaration.
+
+If annotation-based component scanning provides the same bean, remove only the redundant Jira-specific XML registration.
+
+Verify that the relevant packages are component-scanned and the application can create all required beans.
+
+Do not:
+
+- Rewrite unrelated Spring XML.
+- Delete other teams' configuration.
+- Introduce duplicate bean registrations.
+- Accidentally break component scanning.
+- Change unrelated Spring Boot migration work.
+
+Local DB_PASS issue — keep separate
+
+There was a local database password-resolution problem caused by a self-referential "DB_PASS" property.
+
+A developer-only workaround was applied in local configuration, and it was subsequently discussed with Mohan.
+
+This workaround is NOT approved as part of the staging PR.
+
+Preserve it locally if needed for startup, but exclude it from the final PR unless explicitly approved separately.
+
+Do not blindly revert the entire "spring-qas.xml" file because it may contain both valid staging-related changes and local-only configuration changes.
+
+Never expose passwords, credentials, or sensitive connection values in reports or logs.
+
+9. Requirement G — Use Mohan's confirmed metadata
+
+Mohan confirmed the following values in writing:
+
+Field| Required value
+"STATIC_TYPE"| "MLV_CUST_MSG_ADDR"
+"IN_OR_OUT"| "I"
+"SOURCE_SYSTEM"| "MLV"
+"MSG_STATUS"| SQL NULL
+
+These values apply to Customer Message Address staging.
+
+Important:
+
+- "I" means incoming.
+- "SOURCE_SYSTEM" is "MLV", not "MLP".
+- "MSG_STATUS" is SQL NULL, not the text ""null"".
+
+Inspect:
+
+- "IncomingStaticMessageMetadata.java"
+- "MlvIncomingStaticMetadataProvider.java"
+- Staging-related configuration
+- Processor logic
+- DAO parameter mapping
+- StoredProcedure input mapping
+- Unit tests
+
+Metadata provider question
+
+Mohan questioned whether the metadata provider was required with the simplified design.
+
+Review "MlvIncomingStaticMetadataProvider".
+
+If it only provides unnecessary indirection, simplify or remove it.
+
+If it remains useful for multiple supported MLV message types, keep its minimal required responsibilities.
+
+In either case, it must not be injected into the JMS receiver.
+
+Do not accidentally apply Customer Message Address constants to another message type.
+
+Do not invent branch/customer values or other stored-procedure parameters. Derive them from the existing XML and confirmed mappings.
+
+10. Requirement H — Staging-only PR
+
+Mohan instructed us to complete staging and raise a PR first.
+
+After that PR is merged, we will create a separate branch for the Customer Message Address main-table wrapper.
+
+Include now
+
+- Required XML/POJO updates.
+- Common staging DAO.
+- Separate Spring StoredProcedure class.
+- Simplified JMS receiver.
+- Runnable processor.
+- Annotation-based dependency injection.
+- Confirmed metadata.
+- Relevant tests.
+- Minimal necessary wiring changes.
+
+Do not include now
+
+- New Customer Message Address business-table wrapper.
+- Java invocation of the future business procedure.
+- Inserts into main Customer Message Address business tables.
+- Unrelated Customer Additional Info modifications.
+- Portal/CMP changes unrelated to this Jira.
+- Broad Spring migration refactoring.
+- MQ security fixes.
+- Local DB_PASS workaround.
+- Unrelated shared DTO changes.
+- Generated logs and temporary files.
+
+The current PR must remain small, focused, and reviewable.
+
+11. Requirement I — MQ connectivity is still blocked; skip live MQ testing
+
+We have confirmed the following:
+
+- Application startup may succeed.
+- The intended DEV MQ listener connection fails with "JMSWMQ2013" and "MQRC_NOT_AUTHORIZED (2035)".
+- Queue manager: "QFXLM_MM".
+- The problem was reproduced in IntelliJ.
+- Mohan reviewed the DEV JVM settings and visible MQ configuration.
+- The application is being run from VMware/VDI.
+- Mohan believes access whitelisting is needed and indicated a CMP should be raised.
+- CMP approval is still pending.
+- We have not confirmed that whitelisting will resolve the problem.
+
+Do not attempt live MQ integration tests in this session.
+
+Do not modify MQ SSL settings, channels, connection factories, credentials, or authentication to bypass the error.
+
+Do not permanently disable MQ in application code.
+
+Do not publish a message to a shared queue.
+
+Do not state that MQ is working simply because Spring Boot starts.
+
+Later, a teammate with approved MQ access may help with message publishing and integration testing.
+
+For now, the deliverable is locally validated Java implementation with the remaining external MQ blocker clearly documented.
+
+12. Testing without live MQ
+
+Run the available Gradle build and all relevant isolated tests.
+
+XML/JAXB tests
+
+Verify:
+
+- Actual sample XML converts successfully.
+- Correct DTO structure.
+- Correct nested and repeated fields.
+- Malformed XML throws an error.
+- Important business validation still works.
+- Raw XML remains unchanged.
+
+Receiver/processor tests
+
+Verify:
+
+- Receiver extracts the JMS message.
+- Receiver creates/obtains the correct processor.
+- Processor receives the exact payload.
+- Executor invokes the processor.
+- "MLVProcessor.run()" calls parsing and staging.
+- Parse errors prevent staging.
+- Exceptions propagate according to transaction requirements.
+- Concurrent messages do not overwrite each other.
+
+StoredProcedure/DAO tests
+
+Verify:
+
+- Exact stored-procedure name.
+- Correct parameter declarations.
+- Correct input and output mapping.
+- Oracle record/collection parameter handling.
+- SQL NULL metadata mapping.
+- Raw XML chunking.
+- Fragment ordering.
+- Unicode edge cases.
+- Procedure failure handling.
+- Common DAO reuse.
+
+Use mocks for database execution where needed.
+
+Spring wiring tests
+
+Verify:
+
+- Annotated beans can be discovered.
+- Dependencies are injected correctly.
+- No redundant XML bean registration remains.
+- Correct per-message processor scope.
+- No duplicate or missing bean errors.
+- Existing message processing is unaffected.
+
+Regression checks
+
+Verify:
+
+- Existing shared DTOs are unaffected.
+- Customer Additional Info behavior is not broken.
+- Existing MQ configuration remains untouched.
+- Other application paths are not changed.
+
+Do not report unexecuted integration tests as passed.
+
+Do not perform real database writes without explicit permission.
+
+13. Protect existing changes
+
+Before changing code:
+
+1. Inspect the current Git status.
+2. Inspect all modified, untracked, and newly created files.
+3. Distinguish Jira work from pre-existing changes.
+4. Preserve local-only configuration.
+5. Preserve unrelated changes made by other developers.
+
+Do not run blanket Git reset, clean, restore, checkout, or revert commands.
+Do not modify reference repositories.
+Do not commit or push.
+Do not automatically stage files.
+Keep local developer-only DB password changes excluded from the eventual PR.
+Preserve unrelated AddressDetails.java modifications without including them in this Jira's changes.
+Ensure that unrelated files previously modified by Copilot are not accidentally included.
+14. Implementation sequence
+Follow this order:
+Step 1 — Audit
+Inspect existing changes and the exact reference repositories. Produce a short implementation plan.
+Step 2 — POJOs
+Review and correct XML DTOs using the sample XML.
+Step 3 — StoredProcedure
+Create the separate Spring StoredProcedure class and refactor the common staging DAO.
+Step 4 — Receiver and processor
+Follow the FT Core reference to implement the lightweight receiver, Runnable processor, per-message instance handling, and executor integration.
+Step 5 — Annotations
+Move new bean wiring to annotation-based Spring registration. Remove redundant Jira-specific XML declarations only.
+Step 6 — Metadata
+Apply Mohan's confirmed staging values and simplify metadata-provider logic where safe.
+Step 7 — Tests
+Run build, unit tests, isolated integration tests, Spring context checks, and regression tests.
+Do not run live MQ tests.
+Step 8 — Diff review
+Review the final Git diff and separate staging PR changes from local-only or unrelated work.
+Do not commit.
+
+15. Mandatory final report
+When implementation is complete, provide:
+A. Mohan's review requirements
+For every requirement, report:
+Implemented / Partially implemented / Blocked
+File names
+Explanation of the change
+Evidence from code or tests
+B. Exact files changed
+List every created, modified, or deleted file and its purpose.
+C. Reference implementation comparison
+Explain:
+How CloudAmcCustomerDao.java was used.
+How FTCoreReceiveProcess and the FT Core receiver were used.
+Whether mmrouter was needed.
+Any meaningful deviations from the reference pattern and why.
+D. Test evidence
+Provide the actual Gradle commands and results.
+Clearly separate:
+Compilation
+Unit tests
+Spring/component tests
+Mocked Oracle tests
+Live Oracle tests
+Live MQ tests
+E. PR readiness
+List:
+Changes to include in the staging PR.
+Local-only changes to exclude.
+Changes deferred to the future business-wrapper branch.
+F. Blockers
+Document unresolved issues, including:
+MQ 2035 and pending CMP.
+Missing references, if any.
+Database contract uncertainty, if any.
+JMS transaction/acknowledgement concerns, if any.
+Tests that could not be executed.
+G. Final verification
+Confirm that:
+No unrelated code was modified.
+No local credentials were exposed.
+No accidental Spring XML changes remain.
+No shared DTOs were unnecessarily changed.
+No business-table wrapper was introduced.
+No commits or pushes were made.
+H. Final recommendation
+Tell me whether the implementation is ready for my manual review and staging-only PR preparation.
+Start by inspecting the source and reference repositories. Then IMPLEMENT the review changes and run every feasible local test. Do not stop at analysis. Ask me before any destructive action, live infrastructure operation, commit, push, or PR creation.
+
+-----&&&&&&&&------
+
+
+
 I'm working on Jira C166472-43178 in the main QFXLM static Java application.
 
 Please first read the local ".github/copilot-instructions.md" for project context, DEV startup instructions, and repository locations. You also have access to the demo project and relevant skills.
