@@ -5,7 +5,7 @@ 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
 
 The DEV Oracle package body recompilation succeeded, and both package specification and body are now VALID.
 
-Mohan has already approved the replacement STATIC_TYPE value "MLV_CUSMSG_ADR" (14 characters), so the previous 17-versus-15-character mismatch can be resolved without changing the database schema.
+Mohan has already approved the replacement ShiTATIC_TYPE value "MLV_CUSMSG_ADR" (14 characters), so the previous 17-versus-15-character mismatch can be resolved without changing the database schema.
 
 Please:
 
