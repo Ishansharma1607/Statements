@@ -1,5 +1,55 @@
 
+@Test
+void rejectsBlankXmlBeforeExecutingProcedure() {
+    IncomingStaticMessageStagingProcedure procedure =
+            mock(IncomingStaticMessageStagingProcedure.class);
 
+    IncomingStaticMessageStagingDao dao =
+            new IncomingStaticMessageStagingDao(procedure);
+
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    assertThrows(
+            IncomingStaticStagingException.class,
+            () -> dao.stage(" \t\r\n", metadata)
+    );
+
+    verify(procedure, never()).execute(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.any(IncomingStaticMessageMetadata.class)
+    );
+}
+
+-----
+
+
+@Test
+void propagatesProcedureFailure() {
+    IncomingStaticMessageStagingProcedure procedure =
+            mock(IncomingStaticMessageStagingProcedure.class);
+
+    IncomingStaticMessageStagingDao dao =
+            new IncomingStaticMessageStagingDao(procedure);
+
+    IncomingStaticStagingException failure =
+            new IncomingStaticStagingException("S02~unknown branch");
+
+    doThrow(failure).when(procedure).execute(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.any(IncomingStaticMessageMetadata.class)
+    );
+
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    IncomingStaticStagingException thrown = assertThrows(
+            IncomingStaticStagingException.class,
+            () -> dao.stage("<flexstatic/>", metadata)
+    );
+
+    assertSame(failure, thrown);
+}
+
+----
 @Test
 void wrapsDatabaseAccessFailure() {
     JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
