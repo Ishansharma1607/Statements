@@ -1,6 +1,24 @@
-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
 
-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
+@Test
+void rejectsNullXmlBeforeExecutingProcedure() {
+    IncomingStaticMessageStagingProcedure procedure =
+            mock(IncomingStaticMessageStagingProcedure.class);
+    IncomingStaticMessageStagingDao dao =
+            new IncomingStaticMessageStagingDao(procedure);
+
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    assertThrows(
+            IncomingStaticStagingException.class,
+            () -> dao.stage(null, metadata)
+    );
+
+    verify(procedure, never()).execute(
+            org.mockito.ArgumentMatchers.anyList(),
+            org.mockito.ArgumentMatchers.any(IncomingStaticMessageMetadata.class)
+    );
+}
+
 
 
 The DEV Oracle package body recompilation succeeded, and both package specification and body are now VALID.
