@@ -1,4 +1,76 @@
 
+
+@Test
+void wrapsDatabaseAccessFailure() {
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+
+    when(jdbcTemplate.call(any(), anyList()))
+            .thenThrow(new DataAccessResourceFailureException("database unavailable"));
+
+    IncomingStaticMessageStagingProcedure procedure =
+            new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
+    List<String> fragments = List.of("xml");
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    IncomingStaticStagingException exception = assertThrows(
+            IncomingStaticStagingException.class,
+            () -> procedure.execute(fragments, metadata)
+    );
+
+    assertTrue(exception.getMessage().contains("Unable to execute"));
+}
+----
+
+
+@Test
+void rejectsNonBlankDatabaseErrorEvenWhenSuccessFlagIsYes() {
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+
+    when(jdbcTemplate.call(any(), anyList()))
+            .thenReturn(java.util.Map.of(
+                    IncomingStaticMessageStagingProcedure.P_SUCCESS_FLAG, "Y",
+                    IncomingStaticMessageStagingProcedure.P_ERROR_MESSAGE, "warning"
+            ));
+
+    IncomingStaticMessageStagingProcedure procedure =
+            new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
+    List<String> fragments = List.of("xml");
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    IncomingStaticStagingException exception = assertThrows(
+            IncomingStaticStagingException.class,
+            () -> procedure.execute(fragments, metadata)
+    );
+
+    assertTrue(exception.getMessage().contains("warning"));
+}
+-----
+
+@Test
+void rejectsMissingOutputParameters() {
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+
+    when(jdbcTemplate.call(any(), anyList()))
+            .thenReturn(java.util.Collections.emptyMap());
+
+    IncomingStaticMessageStagingProcedure procedure =
+            new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
+    List<String> fragments = List.of("xml");
+    IncomingStaticMessageMetadata metadata = metadata();
+
+    IncomingStaticStagingException exception = assertThrows(
+            IncomingStaticStagingException.class,
+            () -> procedure.execute(fragments, metadata)
+    );
+
+    assertTrue(exception.getMessage().contains("no database error message"));
+}
+
+
+------
 @Test
 void rejectsNullXmlBeforeExecutingProcedure() {
     IncomingStaticMessageStagingProcedure procedure =
