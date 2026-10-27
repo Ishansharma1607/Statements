@@ -1,3 +1,9 @@
+git merge --no-edit origin/feature/C166472-42566-customer-message-address-staging
+
+git push origin feature/C166472-42566-customer-message-address-staging
+
+git stash pop
+
 git stash push -m "Local DB configuration" -- src/qfxlmqfxstatic/src/main/resources/application.yml
 
 git status --short
