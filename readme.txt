@@ -1,3 +1,17 @@
+private MockedStatic<CommonDBUtil> mockOracleArray(JdbcTemplate jdbcTemplate) {
+    MockedStatic<CommonDBUtil> utility = Mockito.mockStatic(CommonDBUtil.class);
+
+    utility.when(() -> CommonDBUtil.getOracleTagArrayFromObjArray(
+            any(Object[][].class),
+            eq(IncomingStaticMessageStagingProcedure.COLLECTION_TYPE),
+            same(jdbcTemplate)
+    )).thenReturn(mock(Array.class));
+
+    return utility;
+}
+
+
+
 ./gradlew :qfxlmqfxstatic:test --tests '*IncomingStaticMessageStagingProcedureTest'
 
 
