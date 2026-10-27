@@ -1,3 +1,6 @@
+grep -Rni --include='*.xml' 'IncomingStaticMessageStagingDao' .
+
+
 find . -iname '*spring*qas*.xml'
 
 
