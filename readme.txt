@@ -1,3 +1,7 @@
+
+./gradlew :qfxlmqfxstatic:test --rerun-tasks
+./gradlew build
+
 private boolean isRetryableFailure(Throwable failure) {
     if (failure instanceof MlvProcessingException processingFailure) {
         return processingFailure.isRetryable();
