@@ -1,5 +1,5 @@
 
-
+JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
 
 @Test
 void arrayUsesExistingUtilityWithoutSplittingOrReorderingAndFreesAfterUse()
