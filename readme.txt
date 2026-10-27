@@ -1,3 +1,26 @@
+git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedure.java
+git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java
+
+git commit -m "C166472-42566 Refactor incoming static staging procedure"
+----
+
+git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingDao.java
+git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingDaoTest.java
+
+git commit -m "C166472-42566 Refactor incoming static staging DAO"
+
+---
+git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/bizimpl/MLVProcessorTest.java
+
+git commit -m "C166472-42566 Update MLV processor tests"
+
+----
+
+git push origin feature/C166472-42566-customer-message-address-staging
+
+---
+
+
 git stash push -m "WIP before pulling PR updates"
 
 git pull --rebase origin feature/C166472-42566-customer-message-address-staging
