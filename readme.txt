@@ -1,3 +1,9 @@
+git stash push -m "Local DB configuration" -- src/qfxlmqfxstatic/src/main/resources/application.yml
+
+git status --short
+
+git log --oneline --left-right --cherry-pick HEAD...origin/feature/C166472-42566-customer-message-address-staging
+
 git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedure.java
 git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java
 
