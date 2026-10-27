@@ -1,3 +1,153 @@
+
+Based on your latest screenshots of `IncomingStaticMessageStagingProcedure.java`, here are the exact edits. Line numbers refer to your current file, before making changes.
+
+We will follow Mohan's MMRouter approach: create an `Object[][]`, call the existing `CommonDBUtil` connector API, and put the returned Oracle `Array` directly into the procedure parameters.
+
+### 1\. Replace line 77
+
+Find this existing line:
+
+```java
+inParameters.put(P_INCOMING_STATIC_MSG, new IncomingStaticMessageArrayValue(fragments));
+```
+
+Replace it with these two lines:
+
+```java
+Array incomingStaticArray = getIncomingStaticMessageTabArray(fragments);
+inParameters.put(P_INCOMING_STATIC_MSG, incomingStaticArray);
+```
+
+Keep lines 78–83 unchanged.
+
+### 2\. Update lines 85–90
+
+Your current code looks like:
+
+```java
+final Map<String, Object> outParameters;
+try {
+    outParameters = super.execute(inParameters);
+} catch (DataAccessException exception) {
+    throw new MlvProcessingException(
+            "Unable to execute incoming static staging procedure", exception);
+}
+```
+
+Replace that entire `try/catch` portion with:
+
+```java
+final Map<String, Object> outParameters;
+try {
+    outParameters = super.execute(inParameters);
+} catch (DataAccessException exception) {
+    throw new MlvProcessingException(
+            "Unable to execute incoming static staging procedure", exception);
+} finally {
+    try {
+        incomingStaticArray.free();
+    } catch (SQLException exception) {
+        log.warn("Unable to free incoming static Oracle array", exception);
+    }
+}
+```
+
+Leave the success flag and error-message checks below line 90 unchanged.
+
+### 3\. Replace lines 117–163
+
+You currently have this nested adapter class:
+
+```java
+static final class IncomingStaticMessageArrayValue
+        implements DisposableSqlTypeValue {
+    // ...
+}
+```
+
+Delete the complete nested class, including its `setTypeValue()` and `cleanup()` methods.
+
+In its place, inside `IncomingStaticMessageStagingProcedure` but outside its other methods, insert:
+
+```java
+private Array getIncomingStaticMessageTabArray(
+        List<String> fragments) {
+
+    Object[][] rows = new Object[fragments.size()][2];
+
+    for (int i = 0; i < fragments.size(); i++) {
+        rows[i][0] = BigDecimal.valueOf(i + 1L);
+        rows[i][1] = fragments.get(i);
+    }
+
+    try {
+        return CommonDBUtil.getOracleTagArrayFromObjArray(
+                rows,
+                COLLECTION_TYPE,
+                getJdbcTemplate()
+        );
+    } catch (SQLException exception) {
+        throw new MlvProcessingException(
+                "Unable to create incoming static Oracle array",
+                exception
+        );
+    }
+}
+```
+
+This is the same connector API used by `CallRouterValidateProc.getTakeDownPaymentInfoTabArray()`.
+
+### 4\. Fix imports at the top
+
+Make sure these imports are present:
+
+```java
+import java.math.BigDecimal;
+import java.sql.Array;
+import java.sql.SQLException;
+```
+
+Keep the existing `CommonDBUtil`, `JdbcTemplate`, `List`, and other required imports.
+
+Remove these imports if they are no longer used:
+
+```java
+import org.springframework.jdbc.core.DisposableSqlTypeValue;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
+import java.sql.PreparedStatement;
+```
+
+In IntelliJ, press Ctrl + Alt + O to optimize imports.
+
+### 5\. Run tests
+
+From Git Bash at your project root:
+
+```bash
+./gradlew :qfxlmqfxstatic:test --rerun-tasks
+```
+
+Then:
+
+```bash
+./gradlew build
+```
+
+The existing staging procedure tests will likely need updates because they currently expect the custom adapter instead of a direct Oracle `Array`.
+
+Important: This now follows the MMRouter binding pattern, but the direct connector call may obtain a different JDBC connection from `super.execute()`. A successful build won't establish that Oracle accepts the array. Run a DEV database integration test before calling the change complete.
+
+For now, make these edits without committing. Send me the updated lines 70–105 and the new helper method, along with any compilation errors. We'll verify the implementation before updating the tests and committing it.
+
+
+
+
+
+
+
+
+
+
 git merge --no-edit origin/feature/C166472-42566-customer-message-address-staging
 
 git push origin feature/C166472-42566-customer-message-address-staging
