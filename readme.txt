@@ -1,3 +1,14 @@
+git status --short
+
+git diff --stat
+
+git diff --cached --stat
+
+git diff --name-only
+
+git diff --cached --name-only
+
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 
