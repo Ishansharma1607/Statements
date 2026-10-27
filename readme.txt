@@ -1,4 +1,8 @@
 
+
+verify(jdbcTemplate, never()).call(any(), anyList());
+--++++
+
 package com.citi.qlm.staticinterface.common.dao;
 
 import com.citi.qlm.staticinterface.common.exception.IncomingStaticStagingException;
