@@ -1,3 +1,18 @@
+private boolean isRetryableFailure(Throwable failure) {
+
+    if (failure instanceof MlvProcessingException processingFailure) {
+        return processingFailure.isRetryable();
+    }
+
+    if (failure instanceof StaticServiceException
+            || failure instanceof IllegalArgumentException) {
+        return false;
+    }
+
+    return true;
+}
+
+-----
 package com.citi.qlm.staticinterface.common.exception;
 
 import java.io.Serial;
