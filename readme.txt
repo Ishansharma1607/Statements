@@ -1,3 +1,57 @@
+@Test
+void arrayUsesExistingUtilityWithoutSplittingOrReorderingAndFreesAfterUse()
+        throws Exception {
+
+    Array oracleArray = mock(Array.class);
+
+    when(jdbcTemplate.call(
+            any(CallableStatementCreator.class),
+            anyList()))
+            .thenReturn(Map.of(
+                    IncomingStaticMessageStagingProcedure.P_SUCCESS_FLAG, "Y",
+                    IncomingStaticMessageStagingProcedure.P_ERROR_MESSAGE, ""
+            ));
+
+    try (MockedStatic<CommonDBUtil> utility =
+                 Mockito.mockStatic(CommonDBUtil.class)) {
+
+        utility.when(() ->
+                CommonDBUtil.getOracleTagArrayFromObjArray(
+                        any(Object[][].class),
+                        eq(IncomingStaticMessageStagingProcedure.COLLECTION_TYPE),
+                        same(jdbcTemplate)))
+                .thenReturn(oracleArray);
+
+        IncomingStaticMessageStagingProcedure procedure =
+                new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
+        procedure.execute(List.of("a", "😀"), metadata());
+
+        ArgumentCaptor<Object[][]> rowsCaptor =
+                ArgumentCaptor.forClass(Object[][].class);
+
+        utility.verify(() ->
+                CommonDBUtil.getOracleTagArrayFromObjArray(
+                        rowsCaptor.capture(),
+                        eq(IncomingStaticMessageStagingProcedure.COLLECTION_TYPE),
+                        same(jdbcTemplate)));
+
+        Object[][] rows = rowsCaptor.getValue();
+
+        assertEquals(2, rows.length);
+        assertEquals(BigDecimal.ONE, rows[0][0]);
+        assertEquals("a", rows[0][1]);
+        assertEquals(BigDecimal.valueOf(2), rows[1][0]);
+        assertEquals("😀", rows[1][1]);
+
+        verify(oracleArray).free();
+    }
+}
+
+---
+
+
+
 
 ./gradlew :qfxlmqfxstatic:test --rerun-tasks
 ./gradlew build
