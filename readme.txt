@@ -1,3 +1,7 @@
+
+./gradlew :qfxlmqfxstatic:test --tests '*IncomingStaticMessageStagingProcedureTest' --rerun-tasks
+
+
 when(jdbcTemplate.call(
         any(CallableStatementCreator.class),
         anyList()))
