@@ -1,4 +1,76 @@
 
+
+package com.citi.qlm.staticinterface.common.dao;
+
+import com.citi.qlm.staticinterface.common.exception.IncomingStaticStagingException;
+import com.citi.qlm.staticinterface.common.util.IncomingStaticXmlChunker;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Objects;
+
+@Log4j2
+@Repository
+public class IncomingStaticMessageStagingDao {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public IncomingStaticMessageStagingDao(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = Objects.requireNonNull(
+                jdbcTemplate, "jdbcTemplate");
+    }
+
+    public void stage(String rawXml,
+                      IncomingStaticMessageMetadata metadata) {
+
+        if (rawXml == null) {
+            throw new IncomingStaticStagingException(
+                    "rawXml is required for incoming static staging");
+        }
+
+        if (rawXml.isBlank()) {
+            throw new IncomingStaticStagingException(
+                    "rawXml cannot be blank for incoming static staging");
+        }
+
+        if (metadata == null) {
+            throw new IncomingStaticStagingException(
+                    "staging metadata is required for incoming static staging");
+        }
+
+        try {
+            metadata.validate();
+        } catch (IllegalArgumentException exception) {
+            throw new IncomingStaticStagingException(
+                    "Invalid incoming static staging metadata", exception);
+        }
+
+        List<String> fragments = IncomingStaticXmlChunker.split(rawXml);
+
+        IncomingStaticMessageStagingProcedure stagingProcedure =
+                new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
+        stagingProcedure.execute(fragments, metadata);
+
+        log.info(
+                "Incoming static message staged with {} fragment(s), type={}, source={}",
+                fragments.size(),
+                metadata.getStaticType(),
+                metadata.getSourceSystem());
+    }
+}
+
+
+
+
+
+
+
+
+-----&&&&&&&_____
+
 @Test
 void rejectsBlankXmlBeforeExecutingProcedure() {
     IncomingStaticMessageStagingProcedure procedure =
