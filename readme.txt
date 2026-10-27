@@ -1,4 +1,4 @@
-
+./gradlew :qfxlmqfxstatic:test --no-daemon --max-workers=1
 .\gradlew --stop
 
 .\gradlew :qfxlmqfxstatic:test --tests "*IncomingStaticMessageStagingDaoTest" --tests "*IncomingStaticMessageStagingProcedureTest" --no-daemon --max-workers=1
