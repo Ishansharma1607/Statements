@@ -1,3 +1,6 @@
+./gradlew :qfxlmqfxstatic:test --tests "*TestMLVStaticReceiver" --no-daemon --max-workers=1
+
+
 
 package com.citi.qlm.staticinterface.cache.service.listener;
 
