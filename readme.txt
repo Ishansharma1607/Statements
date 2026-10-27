@@ -1,4 +1,270 @@
 
+package com.citi.qlm.staticinterface.common.dao;
+
+import com.citi.qlm.staticinterface.common.exception.IncomingStaticStagingException;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+class IncomingStaticMessageStagingDaoTest {
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void preservesAndChunksRawUnicodeXmlInOrder() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        String rawXml = "a".repeat(3_999) + "🙂" + "b";
+        IncomingStaticMessageMetadata metadata = metadata();
+
+        dao.stage(rawXml, metadata);
+
+        ArgumentCaptor<List<String>> fragmentsCaptor =
+                ArgumentCaptor.forClass(List.class);
+
+        ArgumentCaptor<IncomingStaticMessageMetadata> metadataCaptor =
+                ArgumentCaptor.forClass(IncomingStaticMessageMetadata.class);
+
+        verify(procedure).execute(
+                fragmentsCaptor.capture(),
+                metadataCaptor.capture());
+
+        List<String> fragments = fragmentsCaptor.getValue();
+
+        assertEquals(2, fragments.size());
+        assertEquals("a".repeat(3_999) + "🙂", fragments.get(0));
+        assertEquals("b", fragments.get(1));
+        assertEquals(rawXml, String.join("", fragments));
+        assertSame(metadata, metadataCaptor.getValue());
+    }
+
+    @Test
+    void propagatesProcedureFailure() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        IncomingStaticStagingException failure =
+                new IncomingStaticStagingException("S02~unknown branch");
+
+        doThrow(failure)
+                .when(procedure)
+                .execute(
+                        anyList(),
+                        any(IncomingStaticMessageMetadata.class));
+
+        IncomingStaticMessageMetadata metadata = metadata();
+
+        IncomingStaticStagingException thrown = assertThrows(
+                IncomingStaticStagingException.class,
+                () -> dao.stage("<flexstatic/>", metadata));
+
+        assertSame(failure, thrown);
+    }
+
+    @Test
+    void rejectsBlankXmlBeforeExecutingProcedure() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        IncomingStaticMessageMetadata metadata = metadata();
+
+        assertThrows(
+                IncomingStaticStagingException.class,
+                () -> dao.stage(" \t\r\n", metadata));
+
+        verify(procedure, never()).execute(
+                anyList(),
+                any(IncomingStaticMessageMetadata.class));
+    }
+
+    @Test
+    void rejectsNullXmlBeforeExecutingProcedure() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        IncomingStaticMessageMetadata metadata = metadata();
+
+        assertThrows(
+                IncomingStaticStagingException.class,
+                () -> dao.stage(null, metadata));
+
+        verify(procedure, never()).execute(
+                anyList(),
+                any(IncomingStaticMessageMetadata.class));
+    }
+
+    @Test
+    void rejectsNullMetadataBeforeExecutingProcedure() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        assertThrows(
+                IncomingStaticStagingException.class,
+                () -> dao.stage("<flexstatic/>", null));
+
+        verify(procedure, never()).execute(
+                anyList(),
+                any(IncomingStaticMessageMetadata.class));
+    }
+
+    @Test
+    void rejectsInvalidMetadataBeforeExecutingProcedure() {
+
+        IncomingStaticMessageStagingProcedure procedure =
+                mock(IncomingStaticMessageStagingProcedure.class);
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(() -> procedure);
+
+        IncomingStaticMessageMetadata invalidMetadata =
+                new IncomingStaticMessageMetadata(
+                        "MLV_CUSMSG_ADR",
+                        null,
+                        "I",
+                        null,
+                        "MLV",
+                        null,
+                        null,
+                        null);
+
+        assertThrows(
+                IncomingStaticStagingException.class,
+                () -> dao.stage("<flexstatic/>", invalidMetadata));
+
+        verify(procedure, never()).execute(
+                anyList(),
+                any(IncomingStaticMessageMetadata.class));
+    }
+
+    private IncomingStaticMessageMetadata metadata() {
+        return new IncomingStaticMessageMetadata(
+                "MLV_CUSMSG_ADR",
+                "IE6",
+                "I",
+                null,
+                "MLV",
+                "715484",
+                null,
+                null);
+    }
+}
+
+
+-----
+package com.citi.qlm.staticinterface.common.dao;
+
+import com.citi.qlm.staticinterface.common.exception.IncomingStaticStagingException;
+import com.citi.qlm.staticinterface.common.util.IncomingStaticXmlChunker;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Reusable DAO for incoming static message staging.
+ *
+ * Creates a new StoredProcedure instance for every staging invocation.
+ */
+@Log4j2
+@Repository
+public class IncomingStaticMessageStagingDao {
+
+    private final Supplier<IncomingStaticMessageStagingProcedure> procedureFactory;
+
+    @Autowired
+    public IncomingStaticMessageStagingDao(JdbcTemplate jdbcTemplate) {
+        Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
+        this.procedureFactory =
+                () -> new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+    }
+
+    // Package-private constructor for unit tests.
+    IncomingStaticMessageStagingDao(
+            Supplier<IncomingStaticMessageStagingProcedure> procedureFactory) {
+        this.procedureFactory =
+                Objects.requireNonNull(procedureFactory, "procedureFactory");
+    }
+
+    /**
+     * Stages the exact raw XML and returns only after the
+     * stored procedure reports success.
+     */
+    public void stage(String rawXml, IncomingStaticMessageMetadata metadata) {
+
+        if (rawXml == null) {
+            throw new IncomingStaticStagingException(
+                    "rawXml is required for incoming static staging");
+        }
+
+        if (rawXml.isBlank()) {
+            throw new IncomingStaticStagingException(
+                    "rawXml cannot be blank for incoming static staging");
+        }
+
+        if (metadata == null) {
+            throw new IncomingStaticStagingException(
+                    "staging metadata is required for incoming static staging");
+        }
+
+        try {
+            metadata.validate();
+        } catch (IllegalArgumentException exception) {
+            throw new IncomingStaticStagingException(
+                    "Invalid incoming static staging metadata", exception);
+        }
+
+        List<String> fragments = IncomingStaticXmlChunker.split(rawXml);
+
+        IncomingStaticMessageStagingProcedure stagingProcedure =
+                Objects.requireNonNull(
+                        procedureFactory.get(),
+                        "stagingProcedure");
+
+        stagingProcedure.execute(fragments, metadata);
+
+        log.info(
+                "Incoming static message staged with {} fragment(s), type={}, source={}",
+                fragments.size(),
+                metadata.getStaticType(),
+                metadata.getSourceSystem());
+    }
+}
+
+
+-------
 
 package com.citi.qlm.staticinterface.common.dao;
 
