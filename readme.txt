@@ -1,3 +1,42 @@
+
+package com.citi.qlm.staticinterface.common.exception;
+
+import java.io.Serial;
+
+/**
+ * Common exception for MLV parsing, validation and staging failures.
+ */
+public class MlvProcessingException extends RuntimeException {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
+    private final boolean retryable;
+
+    public MlvProcessingException(String message) {
+        this(message, null, false);
+    }
+
+    public MlvProcessingException(String message, Throwable cause) {
+        this(message, cause, true);
+    }
+
+    public MlvProcessingException(
+            String message,
+            Throwable cause,
+            boolean retryable) {
+
+        super(message, cause);
+        this.retryable = retryable;
+    }
+
+    public boolean isRetryable() {
+        return retryable;
+    }
+}
+
+------
+
 private boolean isRetryableFailure(Throwable failure) {
 
     if (failure instanceof MlvProcessingException processingFailure) {
