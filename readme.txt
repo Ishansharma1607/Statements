@@ -1,3 +1,7 @@
+git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java && git commit -m "C166472-42566 Fix staging procedure tests using existing Oracle array utility" -- src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java && git push origin HEAD
+
+
+
 ./gradlew :qfxlmqfxstatic:test --tests "*IncomingStaticMessageStagingProcedureTest" --rerun-tasks
 
 
