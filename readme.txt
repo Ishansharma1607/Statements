@@ -1,3 +1,7 @@
+./gradlew :qfxlmqfxstatic:test --tests "*IncomingStaticMessageStagingProcedureTest" --rerun-tasks
+
+
+
 try (MockedStatic<CommonDBUtil> ignored = mockOracleArray(jdbcTemplate)) {
 
     // Keep all your existing test code here,
