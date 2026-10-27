@@ -1,3 +1,307 @@
+
+package com.citi.qlm.staticinterface.cache.service.listener;
+
+import com.citi.qlm.staticinterface.bizimpl.MLVProcessor;
+import com.citi.qlm.staticinterface.common.exception.MlvProcessingException;
+import com.ibm.msg.client.jakarta.jms.JmsMessage;
+import jakarta.jms.JMSException;
+import org.springframework.context.ApplicationContext;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import static org.mockito.Mockito.*;
+
+public class TestMLVStaticReceiver {
+
+    private MLVStaticReceiver receiver;
+    private ApplicationContext applicationContext;
+
+    @BeforeMethod
+    public void setUp() {
+        applicationContext = mock(ApplicationContext.class);
+        receiver = new MLVStaticReceiver(applicationContext);
+    }
+
+    private JmsMessage messageWithPayload(String payload)
+            throws JMSException {
+        JmsMessage message = mock(JmsMessage.class);
+        when(message.getBody(String.class)).thenReturn(payload);
+        return message;
+    }
+
+    private MLVProcessor stubProcessor() {
+        MLVProcessor processor = mock(MLVProcessor.class);
+
+        when(applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class
+        )).thenReturn(processor);
+
+        return processor;
+    }
+
+    @Test
+    public void testReceiveMessageSuccess() throws Exception {
+        String xml = "<flexstatic/>";
+        JmsMessage message = messageWithPayload(xml);
+        MLVProcessor processor = stubProcessor();
+
+        receiver.receiveMessage(message);
+
+        verify(processor).setXmlString(xml);
+        verify(processor).run();
+    }
+
+    @Test
+    public void testDistinctMessagesUseDistinctProcessorInstances()
+            throws Exception {
+
+        JmsMessage firstMessage = messageWithPayload("<first/>");
+        JmsMessage secondMessage = messageWithPayload("<second/>");
+
+        MLVProcessor firstProcessor = mock(MLVProcessor.class);
+        MLVProcessor secondProcessor = mock(MLVProcessor.class);
+
+        when(applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class
+        )).thenReturn(firstProcessor, secondProcessor);
+
+        receiver.receiveMessage(firstMessage);
+        receiver.receiveMessage(secondMessage);
+
+        Assert.assertNotSame(firstProcessor, secondProcessor);
+
+        verify(firstProcessor).setXmlString("<first/>");
+        verify(firstProcessor).run();
+
+        verify(secondProcessor).setXmlString("<second/>");
+        verify(secondProcessor).run();
+    }
+
+    @Test
+    public void testJmsReadFailurePropagates() throws Exception {
+        JmsMessage message = mock(JmsMessage.class);
+
+        when(message.getBody(String.class))
+                .thenThrow(new JMSException("read error"));
+
+        Assert.expectThrows(
+                MlvProcessingException.class,
+                () -> receiver.receiveMessage(message)
+        );
+
+        verifyNoInteractions(applicationContext);
+    }
+
+    @Test
+    public void testNullMessageIsConsumedWithoutProcessing() {
+        receiver.receiveMessage(null);
+
+        verifyNoInteractions(applicationContext);
+    }
+
+    @Test
+    public void testBlankMessageIsConsumedWithoutProcessing()
+            throws Exception {
+
+        JmsMessage message = messageWithPayload(" \t\r\n ");
+
+        receiver.receiveMessage(message);
+
+        verifyNoInteractions(applicationContext);
+    }
+
+    @Test
+    public void testRetryableProcessorFailurePropagates()
+            throws Exception {
+
+        JmsMessage message = messageWithPayload("<flexstatic/>");
+        MLVProcessor processor = stubProcessor();
+
+        MlvProcessingException failure =
+                new MlvProcessingException(
+                        "Database staging failed",
+                        new IllegalStateException("database unavailable")
+                );
+
+        doThrow(failure).when(processor).run();
+
+        MlvProcessingException thrown = Assert.expectThrows(
+                MlvProcessingException.class,
+                () -> receiver.receiveMessage(message)
+        );
+
+        Assert.assertSame(thrown, failure);
+    }
+
+    @Test
+    public void testUnexpectedProcessorFailureIsWrapped()
+            throws Exception {
+
+        JmsMessage message = messageWithPayload("<flexstatic/>");
+        MLVProcessor processor = stubProcessor();
+
+        IllegalStateException failure =
+                new IllegalStateException("Unexpected worker failure");
+
+        doThrow(failure).when(processor).run();
+
+        MlvProcessingException thrown = Assert.expectThrows(
+                MlvProcessingException.class,
+                () -> receiver.receiveMessage(message)
+        );
+
+        Assert.assertSame(thrown.getCause(), failure);
+    }
+
+    @Test
+    public void testProcessorLookupFailureIsWrapped()
+            throws Exception {
+
+        JmsMessage message = messageWithPayload("<flexstatic/>");
+
+        IllegalStateException failure =
+                new IllegalStateException("Processor unavailable");
+
+        when(applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class
+        )).thenThrow(failure);
+
+        MlvProcessingException thrown = Assert.expectThrows(
+                MlvProcessingException.class,
+                () -> receiver.receiveMessage(message)
+        );
+
+        Assert.assertSame(thrown.getCause(), failure);
+    }
+
+    @Test
+    public void testPermanentInputFailureIsConsumed()
+            throws Exception {
+
+        JmsMessage message = messageWithPayload("<invalid/>");
+        MLVProcessor processor = stubProcessor();
+
+        doThrow(new IllegalArgumentException("Invalid XML"))
+                .when(processor).run();
+
+        receiver.receiveMessage(message);
+
+        verify(processor).run();
+    }
+}
+
+
+
+
+-----###
+package com.citi.qlm.staticinterface.cache.service.listener;
+
+import com.citi.qlm.staticinterface.bizimpl.MLVProcessor;
+import com.citi.qlm.staticinterface.common.exception.MlvProcessingException;
+import com.ibm.msg.client.jakarta.jms.JmsMessage;
+import jakarta.jms.JMSException;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
+import org.springframework.jms.annotation.EnableJms;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@EnableJms
+@Log4j2
+@ConditionalOnProperty(
+        name = "mlv.static.enabled",
+        havingValue = "true"
+)
+public class MLVStaticReceiver {
+
+    private final ApplicationContext applicationContext;
+
+    public MLVStaticReceiver(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+    @JmsListener(
+            destination = "${queue.MLV_RECEIVE_QUEUE}",
+            containerFactory = "ibmMQListenerContainerFactory"
+    )
+    public void receiveMessage(JmsMessage message) {
+        try {
+            String payload = readPayload(message);
+            processMessage(payload);
+
+        } catch (IllegalArgumentException exception) {
+            log.error(
+                    "Permanent MLV input failure; message will not be retried",
+                    exception
+            );
+
+        } catch (JMSException exception) {
+            log.error("Unable to read MLV JMS message", exception);
+            throw new MlvProcessingException(
+                    "Unable to read MLV JMS message",
+                    exception
+            );
+
+        } catch (MlvProcessingException exception) {
+            if (exception.isRetryable()) {
+                log.error("Retryable MLV processing failure", exception);
+                throw exception;
+            }
+
+            log.error(
+                    "Permanent MLV processing failure; message will not be retried",
+                    exception
+            );
+
+        } catch (RuntimeException exception) {
+            log.error("Unexpected MLV processing failure", exception);
+            throw new MlvProcessingException(
+                    "Unexpected MLV processing failure",
+                    exception
+            );
+        }
+    }
+
+    private String readPayload(JmsMessage message) throws JMSException {
+        if (message == null) {
+            throw new IllegalArgumentException(
+                    "Received null MLV JMS message"
+            );
+        }
+
+        String payload = message.getBody(String.class);
+
+        if (payload == null || payload.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Received blank MLV XML message"
+            );
+        }
+
+        return payload;
+    }
+
+    private void processMessage(String payload) {
+        MLVProcessor processor = applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class
+        );
+
+        processor.setXmlString(payload);
+
+        // Processing completes before the JMS listener returns.
+        // Retryable failures can therefore reach the JMS transaction.
+        processor.run();
+    }
+}
+
+-------
+
 ./gradlew :qfxlmqfxstatic:build --no-daemon --max-workers=1
 
 
