@@ -1,3 +1,13 @@
+git diff --check
+
+git grep -n "IncomingStaticStagingException" -- src
+
+git diff -- src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/cache/service/listener/MLVStaticReceiver.java
+
+git diff -- src/qfxlmqfxstatic/src/main/resources/application.yml
+
+
+
 git status --short
 
 git diff --stat
