@@ -1,4 +1,9 @@
 
+private IncomingStaticMessageMetadata extractStagingMetadata(
+        Flexstatic flexstatic) throws StaticServiceException {
+
+
+-__--__-
 package com.citi.qlm.staticinterface.bizimpl;
 
 import java.util.Objects;
