@@ -1,3 +1,128 @@
+
+package com.citi.qlm.staticinterface.cache.service.listener;
+
+import com.citi.common.thread.QFXLMExecutorService;
+import com.citi.qlm.staticinterface.bizimpl.MLVProcessor;
+import com.citi.qlm.staticinterface.common.exception.MlvProcessingException;
+import com.ibm.msg.client.jakarta.jms.JmsMessage;
+import jakarta.jms.JMSException;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
+import org.springframework.jms.annotation.EnableJms;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@EnableJms
+@Log4j2
+@ConditionalOnProperty(
+        name = {"mlv.static.enabled"},
+        havingValue = "true"
+)
+public class MLVStaticReceiver {
+
+    private final QFXLMExecutorService executorMlvStaticService;
+    private final ApplicationContext applicationContext;
+
+    public MLVStaticReceiver(
+            @Qualifier("executorMlvStaticService")
+            QFXLMExecutorService executorMlvStaticService,
+            ApplicationContext applicationContext) {
+        this.executorMlvStaticService = executorMlvStaticService;
+        this.applicationContext = applicationContext;
+    }
+
+    @JmsListener(
+            destination = "${queue.MLV_RECEIVE_QUEUE}",
+            containerFactory = "ibmMQListenerContainerFactory"
+    )
+    public void receiveMessage(JmsMessage message) {
+        try {
+            String payload = readPayload(message);
+            submitProcessing(payload);
+
+        } catch (JMSException exception) {
+            log.error("Error reading MLV JMS message",
+                    exception);
+            throw new MlvProcessingException(
+                    "Unable to read MLV JMS message",
+                    exception);
+
+        } catch (IllegalArgumentException exception) {
+            log.error(
+                    "Permanent MLV input failure; message will not be retried: {}",
+                    exception.getMessage(),
+                    exception);
+
+        } catch (MlvProcessingException exception) {
+            log.error(
+                    "Unable to submit MLV message for processing",
+                    exception);
+            throw exception;
+
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Unexpected error handling MLV JMS message",
+                    exception);
+            throw new MlvProcessingException(
+                    "Unexpected MLV message handling failure",
+                    exception);
+        }
+    }
+
+    private String readPayload(JmsMessage message)
+            throws JMSException {
+
+        if (message == null) {
+            throw new IllegalArgumentException(
+                    "Received null MLV JMS message");
+        }
+
+        String payload = message.getBody(String.class);
+
+        if (payload == null || payload.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Received blank MLV XML message");
+        }
+
+        return payload;
+    }
+
+    private void submitProcessing(String payload) {
+        MLVProcessor processor = applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class);
+
+        processor.setXmlString(payload);
+
+        // Submit asynchronously. Do not block the JMS listener with Future.get().
+        executorMlvStaticService.submit(() -> {
+            try {
+                processor.run();
+
+            } catch (MlvProcessingException exception) {
+                log.error(
+                        "MLV background processing failed. Retryable: {}. Error: {}",
+                        exception.isRetryable(),
+                        exception.getMessage(),
+                        exception);
+
+            } catch (RuntimeException exception) {
+                log.error(
+                        "Unexpected error in MLV background processing",
+                        exception);
+            }
+        });
+    }
+}
+
+
+
+
+________
+
 ./gradlew :qfxlmqfxstatic:test --no-daemon --max-workers=1
 .\gradlew --stop
 
