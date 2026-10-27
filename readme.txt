@@ -1,3 +1,9 @@
+git status --short
+
+git --no-pager diff -- src/qfxlmqfxstatic/src/main/resources/application.yml
+
+git --no-pager diff -- src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/exception/MLVProcessingException.java
+
 
 git diff --check
 git grep -n "IncomingStaticStagingException" -- src
