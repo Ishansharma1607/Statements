@@ -1,4 +1,151 @@
 
+package com.citi.qlm.staticinterface.bizimpl;
+
+import java.util.Objects;
+
+import com.citi.qlm.staticinterface.cache.service.common.util.CommonXMLToPojoConverter;
+import com.citi.qlm.staticinterface.common.dao.IncomingStaticMessageMetadata;
+import com.citi.qlm.staticinterface.common.dao.IncomingStaticMessageStagingDao;
+import com.citi.qlm.staticinterface.common.dto.incoming.CustomerMessageAddress;
+import com.citi.qlm.staticinterface.common.dto.incoming.CustomerMessageAddressDetails;
+import com.citi.qlm.staticinterface.common.dto.incoming.Flexstatic;
+import com.citi.qlm.staticinterface.common.exception.IncomingStaticStagingException;
+import com.citi.qlm.staticinterface.common.exception.MlvProcessingException;
+import com.citi.qlm.staticinterface.common.exception.StaticServiceException;
+
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Service;
+
+@Log4j2
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Service("mlvProcessor")
+public class MLVProcessor implements Runnable {
+
+    static final String CUSTOMER_MESSAGE_ADDRESS_STATIC_TYPE = "MLV_CUSMSG_ADR";
+    static final String INCOMING = "I";
+    static final String MLV_SOURCE_SYSTEM = "MLV";
+
+    private static final CommonXMLToPojoConverter CONVERTER =
+            new CommonXMLToPojoConverter();
+
+    private final IncomingStaticMessageStagingDao stagingDao;
+
+    private String xmlString;
+
+    public MLVProcessor(IncomingStaticMessageStagingDao stagingDao) {
+        this.stagingDao = Objects.requireNonNull(stagingDao, "stagingDao");
+    }
+
+    public void setXmlString(String xmlString) {
+        this.xmlString = Objects.requireNonNull(
+                xmlString, "xmlString cannot be null");
+    }
+
+    @Override
+    public void run() {
+        try {
+            Flexstatic flexstatic =
+                    CONVERTER.convertXmlToPojo(xmlString, Flexstatic.class);
+
+            if (flexstatic == null) {
+                throw new StaticServiceException(
+                        "Unable to parse incoming MLV XML payload");
+            }
+
+            boolean hasCustomerAdditionalInfo = flexstatic.getCus() != null;
+            boolean hasCustomerMessageAddress =
+                    flexstatic.getCustomerMessageAddress() != null;
+
+            if (hasCustomerAdditionalInfo == hasCustomerMessageAddress) {
+                throw new StaticServiceException(
+                        "Flexstatic must contain exactly one supported MLV message child");
+            }
+
+            IncomingStaticMessageMetadata metadata =
+                    extractStagingMetadata(flexstatic);
+
+            if (metadata != null) {
+                stagingDao.stage(xmlString, metadata);
+            }
+
+        } catch (Exception ex) {
+            log.error("Error while processing MLV payload", ex);
+
+            if (ex instanceof MlvProcessingException processingException) {
+                throw processingException;
+            }
+
+            throw new MlvProcessingException(
+                    "MLV payload processing/staging failed",
+                    ex,
+                    isRetryableFailure(ex));
+        }
+    }
+
+    private IncomingStaticMessageMetadata extractStagingMetadata(
+            Flexstatic flexstatic) {
+
+        if (flexstatic.getCus() != null) {
+            log.info(
+                    "CustomerAdditionalInfo XML parsed. branchCode: {}, customerNumber: {}",
+                    flexstatic.getCus().getBranchCode(),
+                    flexstatic.getCus().getCustomerNumber());
+
+            // Preserve the existing CustomerAdditionalInfo handling.
+            // Its staging metadata can be added here when the
+            // corresponding static-type contract is available.
+            return null;
+        }
+
+        CustomerMessageAddress customerMessageAddress =
+                flexstatic.getCustomerMessageAddress();
+
+        if (customerMessageAddress == null) {
+            throw new StaticServiceException(
+                    "CustomerMessageAddress is missing from MLV payload");
+        }
+
+        CustomerMessageAddressDetails details =
+                customerMessageAddress.getAddressDetails();
+
+        if (details == null) {
+            throw new StaticServiceException(
+                    "CustomerMessageAddress.addressDetails is required for staging metadata");
+        }
+
+        return new IncomingStaticMessageMetadata(
+                CUSTOMER_MESSAGE_ADDRESS_STATIC_TYPE,
+                details.getBranchCode(),
+                INCOMING,
+                null,
+                MLV_SOURCE_SYSTEM,
+                details.getCustomerNumber(),
+                null,
+                null);
+    }
+
+    private boolean isRetryableFailure(Throwable failure) {
+        if (failure instanceof StaticServiceException
+                || failure instanceof IllegalArgumentException) {
+            return false;
+        }
+
+        if (failure instanceof IncomingStaticStagingException stagingFailure) {
+            return stagingFailure.getCause() != null
+                    && isRetryableFailure(stagingFailure.getCause());
+        }
+
+        return true;
+    }
+}
+
+
+
+-__-__-_-₹_-_-__-
+
+
 package com.citi.qlm.staticinterface.cache.service.listener;
 
 import com.citi.common.thread.QFXLMExecutorService;
