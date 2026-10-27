@@ -1,4 +1,8 @@
+find . -iname '*spring*qas*.xml'
 
+
+
+----
 private IncomingStaticMessageMetadata extractStagingMetadata(
         Flexstatic flexstatic) throws StaticServiceException {
 
