@@ -1,3 +1,5 @@
+./gradlew :qfxlmqfxstatic:test --tests '*IncomingStaticMessageStagingProcedureTest'
+
 
 JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
 
