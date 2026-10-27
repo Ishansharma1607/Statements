@@ -1,4 +1,133 @@
+./gradlew :qfxlmqfxstatic:build --no-daemon --max-workers=1
 
+
+./gradlew :qfxlmqfxstatic:test --no-daemon --max-workers=1
+
+******
+
+
+
+./gradlew :qfxlmqfxstatic:test --tests "*MLVProcessorTest" --tests "*MlvStagingWiringTest" --tests "*IncomingStaticMessageStagingDaoTest" --tests "*IncomingStaticMessageStagingProcedureTest" --no-daemon --max-workers=1
+
+*******
+
+
+package com.citi.qlm.staticinterface.cache.service.listener;
+
+import com.citi.qlm.staticinterface.bizimpl.MLVProcessor;
+import com.citi.qlm.staticinterface.common.exception.MlvProcessingException;
+import com.ibm.msg.client.jakarta.jms.JmsMessage;
+import jakarta.jms.JMSException;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
+import org.springframework.jms.annotation.EnableJms;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+@EnableJms
+@Log4j2
+@ConditionalOnProperty(
+        name = "mlv.static.enabled",
+        havingValue = "true"
+)
+public class MLVStaticReceiver {
+
+    private final ApplicationContext applicationContext;
+
+    public MLVStaticReceiver(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
+    @JmsListener(
+            destination = "${queue.MLV_RECEIVE_QUEUE}",
+            containerFactory = "ibmMQListenerContainerFactory"
+    )
+    public void receiveMessage(JmsMessage message) {
+        try {
+            String payload = readPayload(message);
+            processMessage(payload);
+
+        } catch (JMSException exception) {
+            log.error("Error reading MLV JMS message", exception);
+
+            throw new MlvProcessingException(
+                    "Unable to read MLV JMS message",
+                    exception
+            );
+
+        } catch (IllegalArgumentException exception) {
+            log.error(
+                    "Permanent MLV input failure; message will not be retried: {}",
+                    exception.getMessage(),
+                    exception
+            );
+
+        } catch (MlvProcessingException exception) {
+            if (exception.isRetryable()) {
+                log.error(
+                        "Retryable MLV processing failure",
+                        exception
+                );
+                throw exception;
+            }
+
+            log.error(
+                    "Permanent MLV processing failure; message will not be retried",
+                    exception
+            );
+
+        } catch (RuntimeException exception) {
+            log.error(
+                    "Unexpected error handling MLV JMS message",
+                    exception
+            );
+
+            throw new MlvProcessingException(
+                    "Unexpected MLV message handling failure",
+                    exception
+            );
+        }
+    }
+
+    private String readPayload(JmsMessage message)
+            throws JMSException {
+
+        if (message == null) {
+            throw new IllegalArgumentException(
+                    "Received null MLV JMS message"
+            );
+        }
+
+        String payload = message.getBody(String.class);
+
+        if (payload == null || payload.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Received blank MLV XML message"
+            );
+        }
+
+        return payload;
+    }
+
+    private void processMessage(String payload) {
+        MLVProcessor processor = applicationContext.getBean(
+                "mlvProcessor",
+                MLVProcessor.class
+        );
+
+        processor.setXmlString(payload);
+
+        // Process on the JMS listener thread.
+        // Retryable failures propagate before JMS transaction completion.
+        processor.run();
+    }
+}
+
+
+
+"******
 package com.citi.qlm.staticinterface.common.exception;
 
 import java.io.Serial;
