@@ -1,3 +1,12 @@
+private boolean isRetryableFailure(Throwable failure) {
+    if (failure instanceof MlvProcessingException processingFailure) {
+        return processingFailure.isRetryable();
+    }
+
+    return !(failure instanceof StaticServiceException
+            || failure instanceof IllegalArgumentException);
+}
+
 
 Based on your latest screenshots of `IncomingStaticMessageStagingProcedure.java`, here are the exact edits. Line numbers refer to your current file, before making changes.
 
