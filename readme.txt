@@ -1,3 +1,7 @@
+
+git --no-pager diff -- src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/cache/service/listener/MLVStaticReceiver.java
+
+
 git status --short
 
 git --no-pager diff -- src/qfxlmqfxstatic/src/main/resources/application.yml
