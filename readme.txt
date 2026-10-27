@@ -1,3 +1,9 @@
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+
+
+
 ./gradlew :qfxlmqfxstatic:test --tests "*TestMLVStaticReceiver" --no-daemon --max-workers=1
 
 
