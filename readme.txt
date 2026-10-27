@@ -1,4 +1,7 @@
 
+.\gradlew --stop
+
+.\gradlew :qfxlmqfxstatic:test --tests "*IncomingStaticMessageStagingDaoTest" --tests "*IncomingStaticMessageStagingProcedureTest" --no-daemon --max-workers=1
 
 verify(jdbcTemplate, never()).call(any(), anyList());
 --++++
