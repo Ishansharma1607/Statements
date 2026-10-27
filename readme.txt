@@ -1,3 +1,10 @@
+git stash push -m "WIP before pulling PR updates"
+
+git pull --rebase origin feature/C166472-42566-customer-message-address-staging
+
+git stash pop
+
+
 git stash push -m "local DB config" -- src/qfxlmqfxstatic/src/main/resources/application.yml
 
 git pull --rebase origin feature/C166472-42566-customer-message-address-staging
