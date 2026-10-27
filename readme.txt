@@ -1,3 +1,21 @@
+git stash push -m "local DB config" -- src/qfxlmqfxstatic/src/main/resources/application.yml
+
+git pull --rebase origin feature/C166472-42566-customer-message-address-staging
+
+git stash pop
+
+git push -u origin feature/C166472-42566-customer-message-address-staging
+
+
+git status
+git branch --show-current
+git log -5 --oneline
+
+-----
+
+git push -u origin feature/C166472-42566-customer-message-address-staging
+
+
 git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/cache/service/listener/MLVStaticReceiver.java
 git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/cache/service/listener/TestMLVStaticReceiver.java
 
