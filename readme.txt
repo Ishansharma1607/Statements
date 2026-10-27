@@ -1,3 +1,24 @@
+git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/cache/service/listener/MLVStaticReceiver.java
+git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/cache/service/listener/TestMLVStaticReceiver.java
+
+git diff --cached --stat
+git commit -m "Fix MLV listener processing and exception propagation"
+
+----
+
+
+git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/bizimpl/MLVProcessor.java
+git add src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/exception/MlvProcessingException.java
+
+
+----
+
+
+git diff --cached --stat
+git commit -m "Refactor MLV processor validation and exception handling"
+
+-----
+
 git add -u -- src/qfxlmqfxstatic/src/main/java
 git add -u -- src/qfxlmqfxstatic/src/test/java
 git diff --cached --stat
