@@ -1,3 +1,10 @@
+
+git diff --check
+git grep -n "IncomingStaticStagingException" -- src
+git diff -- src/qfxlmqfxstatic/src/main/resources/application.yml
+
+
+
 git diff --check
 
 git grep -n "IncomingStaticStagingException" -- src
