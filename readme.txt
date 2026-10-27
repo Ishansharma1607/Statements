@@ -1,3 +1,13 @@
+try (MockedStatic<CommonDBUtil> ignored = mockOracleArray(jdbcTemplate)) {
+
+    // Keep all your existing test code here,
+    // including when(...), assertions and procedure.execute(...)
+
+}
+
+
+
+
 private MockedStatic<CommonDBUtil> mockOracleArray(JdbcTemplate jdbcTemplate) {
     MockedStatic<CommonDBUtil> utility = Mockito.mockStatic(CommonDBUtil.class);
 
