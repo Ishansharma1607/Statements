@@ -1,3 +1,27 @@
+when(jdbcTemplate.call(
+        any(CallableStatementCreator.class),
+        anyList()))
+    .thenAnswer(invocation -> {
+        CallableStatementCreator creator = invocation.getArgument(0);
+
+        Connection connection = mock(Connection.class);
+        CallableStatement statement = mock(CallableStatement.class);
+
+        when(connection.prepareCall(anyString()))
+                .thenReturn(statement);
+
+        // Execute JDBC parameter binding, including the Oracle array.
+        creator.createCallableStatement(connection);
+
+        return Map.of(
+                IncomingStaticMessageStagingProcedure.P_SUCCESS_FLAG, "Y",
+                IncomingStaticMessageStagingProcedure.P_ERROR_MESSAGE, ""
+        );
+    });
+
+
+
+
 git add src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java && git commit -m "C166472-42566 Fix staging procedure tests using existing Oracle array utility" -- src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java && git push origin HEAD
 
 
