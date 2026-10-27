@@ -1,3 +1,15 @@
+git add -u -- src/qfxlmqfxstatic/src/main/java
+git add -u -- src/qfxlmqfxstatic/src/test/java
+git diff --cached --stat
+git diff --cached --check
+
+
+----
+git grep -n "IncomingStaticStagingException" -- src
+git diff --check
+git status --short
+
+----
 git grep -n "IncomingStaticStagingException" -- src
 
 git diff --check
