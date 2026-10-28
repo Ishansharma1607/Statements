@@ -1,3 +1,24 @@
+else if (flexstatic.getCustomerMessageAddress() != null
+        && flexstatic.getCustomerMessageAddress().getAddressDetails() != null) {
+
+    CustomerMessageAddressDetails details =
+            flexstatic.getCustomerMessageAddress().getAddressDetails();
+
+    return new IncomingStaticMessageMetadata(
+            CUSTOMER_MESSAGE_ADDRESS_STATIC_TYPE,
+            details.getBranchCode(),
+            INCOMING,
+            null,
+            MLV_SOURCE_SYSTEM,
+            details.getCustomerNumber(),
+            null,
+            null);
+}
+
+return null;
+
+
+
 @Autowired
 public IncomingStaticMessageStagingDao(JdbcTemplate jdbcTemplate) {
     this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
