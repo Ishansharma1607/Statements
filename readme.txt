@@ -1,3 +1,11 @@
+import org.springframework.stereotype.Component;
+
+@Log4j2
+@Component
+public class CommonXMLToPojoConverter {
+
+
+
 git add -u -- . ':(exclude,glob)**/application.yml' && git diff --cached --check && git commit -m "C166472-42566 Address Mohan review comments and fix unit tests" && git -c rebase.autoStash=true pull --rebase origin "$(git branch --show-current)" && git push origin "$(git branch --show-current)"
 
 
