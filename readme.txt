@@ -1,3 +1,11 @@
+@Autowired
+public IncomingStaticMessageStagingDao(JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
+}
+
+IncomingStaticMessageStagingProcedure procedure =
+        new IncomingStaticMessageStagingProcedure(jdbcTemplate);
+
 
 git add -- src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedure.java src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/common/dao/IncomingStaticMessageStagingProcedureTest.java src/qfxlmqfxstatic/src/main/java/com/citi/qlm/staticinterface/bizimpl/MLVProcessor.java src/qfxlmqfxstatic/src/test/java/com/citi/qlm/staticinterface/cache/service/listener/TestMLVStaticReceiver.java && git diff --cached --check && git commit -m "C166472-42566 Fix Oracle array staging tests and SonarQube issues" && git push origin HEAD
 
