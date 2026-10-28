@@ -1,3 +1,61 @@
+import org.mockito.MockedConstruction;
+import static org.mockito.Mockito.mockConstruction;
+
+try (MockedConstruction<IncomingStaticMessageStagingProcedure> mocked =
+             mockConstruction(IncomingStaticMessageStagingProcedure.class)) {
+
+    IncomingStaticMessageStagingDao dao =
+            new IncomingStaticMessageStagingDao(jdbcTemplate);
+
+    dao.stage(rawXml, metadata);
+
+    IncomingStaticMessageStagingProcedure procedure =
+            mocked.constructed().get(0);
+
+    ArgumentCaptor<List<String>> fragmentsCaptor =
+            ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<IncomingStaticMessageMetadata> metadataCaptor =
+            ArgumentCaptor.forClass(IncomingStaticMessageMetadata.class);
+
+    verify(procedure).execute(
+            fragmentsCaptor.capture(),
+            metadataCaptor.capture());
+
+    assertEquals(2, fragmentsCaptor.getValue().size());
+    assertEquals(rawXml, String.join("", fragmentsCaptor.getValue()));
+    assertSame(metadata, metadataCaptor.getValue());
+}
+
+
+----
+
+@Test
+void createsFreshProcedureForEveryStagingInvocation() {
+    JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+
+    try (MockedConstruction<IncomingStaticMessageStagingProcedure> mocked =
+                 mockConstruction(IncomingStaticMessageStagingProcedure.class)) {
+
+        IncomingStaticMessageStagingDao dao =
+                new IncomingStaticMessageStagingDao(jdbcTemplate);
+
+        IncomingStaticMessageMetadata metadata = metadata();
+
+        dao.stage("<flexstatic id='1'/>", metadata);
+        dao.stage("<flexstatic id='2'/>", metadata);
+
+        assertEquals(2, mocked.constructed().size());
+
+        verify(mocked.constructed().get(0))
+                .execute(anyList(), any(IncomingStaticMessageMetadata.class));
+
+        verify(mocked.constructed().get(1))
+                .execute(anyList(), any(IncomingStaticMessageMetadata.class));
+    }
+}
+
+---
+
 ./gradlew clean build --continue --console=plain > ../gradle-full-build.log 2>&1; grep -nEi "FAILED|error:|Caused by:|tests completed|BUILD SUCCESSFUL" ../gradle-full-build.log || tail -n 30 ../gradle-full-build.log
 
 
