@@ -1,3 +1,9 @@
+./gradlew clean build --continue --console=plain > ../gradle-full-build.log 2>&1; grep -nEi "FAILED|error:|Caused by:|tests completed|BUILD SUCCESSFUL" ../gradle-full-build.log || tail -n 30 ../gradle-full-build.log
+
+
+
+
+
 else if (flexstatic.getCustomerMessageAddress() != null
         && flexstatic.getCustomerMessageAddress().getAddressDetails() != null) {
 
