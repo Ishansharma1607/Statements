@@ -1,3 +1,5 @@
+./gradlew :qfxlmqfxstatic:test --console=plain > test-results.log 2>&1; grep -nE "FAILED|tests completed|BUILD FAILED|BUILD SUCCESSFUL|error:" test-results.log || true
+
 
 Assertions.assertDoesNotThrow(processor::run);
 
