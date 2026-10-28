@@ -1,3 +1,8 @@
+
+grep -n -A 25 -B 3 'runRejectsCustomerMessageAddressWithoutAddressDetails' src/qfxlmqfxstatic/build/test-results/test/TEST-*MLVProcessorTest.xml
+
+
+
 ./gradlew :qfxlmqfxstatic:test --console=plain > ../dao-test.log 2>&1; grep -nE "error:|FAILED|tests completed|BUILD FAILED|BUILD SUCCESSFUL" ../dao-test.log | tail -40
 
 
