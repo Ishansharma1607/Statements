@@ -1,3 +1,9 @@
+void runSkipsCustomerMessageAddressWithoutAddressDetails() {
+
+Assertions.assertDoesNotThrow(processor::run);
+
+
+
 
 grep -n -A 25 -B 3 'runRejectsCustomerMessageAddressWithoutAddressDetails' src/qfxlmqfxstatic/build/test-results/test/TEST-*MLVProcessorTest.xml
 
