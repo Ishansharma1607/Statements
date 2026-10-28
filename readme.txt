@@ -1,3 +1,7 @@
+new MLVProcessor(stagingDao, new CommonXMLToPojoConverter())
+
+
+
 } catch (Exception ex) {
     log.error("Error while processing MLV payload", ex);
 }
