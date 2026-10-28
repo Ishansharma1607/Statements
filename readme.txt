@@ -1,3 +1,10 @@
+} catch (Exception ex) {
+    log.error("Error while processing MLV payload", ex);
+}
+
+
+
+
 private final CommonXMLToPojoConverter converter;
 
 public MLVProcessor(
