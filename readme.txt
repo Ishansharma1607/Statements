@@ -1,3 +1,6 @@
+
+Assertions.assertDoesNotThrow(processor::run);
+
 new MLVProcessor(stagingDao, new CommonXMLToPojoConverter())
 
 
