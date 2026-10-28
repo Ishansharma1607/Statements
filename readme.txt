@@ -1,3 +1,6 @@
+./gradlew :qfxlmqfxstatic:test --console=plain && git add -u -- ':(glob)**/IncomingStaticMessageStagingProcedure.java' ':(glob)**/MLVProcessor.java' && git commit -m "C166472-42566 Complete staging validation and MLV processor review fixes" && git push origin HEAD
+
+
 
 ./gradlew :qfxlmqfxstatic:test --console=plain && git add -u -- ':(glob)**/IncomingStaticMessageStagingProcedureTest.java' && git commit -m "C166472-42566 Fix staging procedure test after DAO validation changes" && git push origin HEAD
 
