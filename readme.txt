@@ -1,3 +1,15 @@
+private final CommonXMLToPojoConverter converter;
+
+public MLVProcessor(
+        IncomingStaticMessageStagingDao stagingDao,
+        CommonXMLToPojoConverter converter) {
+    this.stagingDao = Objects.requireNonNull(stagingDao, "stagingDao");
+    this.converter = Objects.requireNonNull(converter, "converter");
+}
+
+
+converter.convertXmlToPojo(xmlString, Flexstatic.class)
+
 import org.springframework.stereotype.Component;
 
 @Log4j2
