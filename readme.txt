@@ -1,3 +1,16 @@
+IncomingStaticMessageMetadata validMetadata = metadata();
+
+MlvProcessingException thrown = assertThrows(
+        MlvProcessingException.class,
+        () -> dao.stage("<flexstatic/>", validMetadata));
+
+
+ArgumentCaptor<List<String>> fragmentsCaptor =
+        ArgumentCaptor.captor();
+
+
+
+
 import org.mockito.MockedConstruction;
 import static org.mockito.Mockito.mockConstruction;
 
