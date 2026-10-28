@@ -1,3 +1,7 @@
+git add -u -- ':(glob)**/CommonXMLToPojoConverter.java' ':(glob)**/MLVProcessor.java' ':(glob)**/MLVProcessorTest.java' ':(glob)**/MlvStagingWiringTest.java' && git commit -m "C166472-42566 Address Mohan review comments and fix MLV processor wiring tests" && git push origin HEAD
+
+
+
 context.register(
     IncomingStaticMessageStagingProcedure.class,
     IncomingStaticMessageStagingDao.class,
