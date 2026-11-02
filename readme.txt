@@ -1,3 +1,21 @@
+Review your completed MLV Customer Message Address Java implementation against the actual database package SQL and existing project behavior. Do not make assumptions.
+
+1. Verify that every parameter position, Oracle SQL type, collection type, and OUT parameter in MlvCustomerMessageAddressProcedure matches PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_msg_addr exactly.
+2. Verify that the create/edit decision (C/E) matches the existing PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr business rules. Explain the exact existence-check table, keys, and status conditions used.
+3. Verify whether p_auto_auth_flag=1, p_user_id and any hardcoded defaults are valid for incoming MLV messages. Identify every assumed default and its source. Do not silently invent missing values.
+4. List each input passed as NULL or an empty Oracle collection, and verify from the SQL body whether that is supported. Inspect fax, DocuSign, tag fields and message sub-type carefully.
+5. Examine the actual MLVProcessor.run() -> MLVStaticReceiver.receiveMessage() exception path. Demonstrate what happens if staging succeeds but business processing fails. Do not silently change retry behavior or enable redelivery without checking idempotency and transaction boundaries.
+6. Confirm stagingDao.stage() checks the database p_success_flag rather than assuming no exception means success.
+7. Confirm Oracle SQL arrays/structs are created on the correct JDBC connection, released appropriately, and mapped in the correct order.
+8. Check whether processing multiple messageMappingEntry elements is supported and whether any repeated fields could conflict.
+9. Add focused tests for any confirmed gaps and rerun the relevant Gradle tests.
+
+FIRST give me a concise risk report with VERIFIED, ASSUMED and BLOCKED items. Then fix only defects you can establish from the code and SQL. For missing business requirements, stop and clearly describe the decision needed rather than inventing values. Do not edit unrelated files, commit, or push. Finish with exact changed-file list and actual test results.
+
+
+_________
+
+
 You are working in my existing QFXLM Java Spring Boot/Gradle repository: qfxlmqfxstatic.
 
 TASK:
