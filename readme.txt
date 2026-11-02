@@ -1,3 +1,59 @@
+You are working in my existing QFXLM Java Spring Boot/Gradle repository: qfxlmqfxstatic.
+
+TASK:
+Implement the Java-side processing for incoming MLV Customer Message Address XML after successful XML staging.
+
+BACKGROUND:
+The current MLV flow receives MQ XML, parses it using the existing POJO/converter, and stages the original XML through IncomingStaticMessageStagingDao and IncomingStaticMessageStagingProcedure, which call PKG_QLM_INCOMING_STATIC_MSG.prc_log_incoming_static_msg. This staging flow already exists and must remain intact.
+
+The DB team has prepared a new wrapper in PKG_QLM_INCOMING_STATIC_MSG called prc_mlv_customer_msg_addr. The wrapper delegates to PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr to apply Customer Message Address data to the actual business tables. Review the attached SQL wrapper for its precise IN/OUT parameter types and ordering. Never guess the signature.
+
+WHAT YOU MUST DO:
+
+1. FIRST INSPECT THE EXISTING CODEBASE. Read MLVProcessor.java, MLVStaticReceiver.java, IncomingStaticMessageStagingDao.java, IncomingStaticMessageStagingProcedure.java, IncomingStaticMessageMetadata.java, CommonXMLToPojoConverter.java, the Customer Message Address POJO(s), any existing Customer Additional Info stored-procedure caller, existing processCustomerMessageAddress() logic (if present), and relevant tests. Identify the actual classes/methods before editing.
+
+2. Preserve MQ reception, XML parsing, existing routing between Customer Additional Info and Customer Message Address, and current XML staging behavior. Do not refactor unrelated code.
+
+3. For Customer Message Address XML only, after the existing staging procedure returns confirmed success, map the parsed Customer Message Address POJO data and invoke the new DB wrapper PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_msg_addr. Never invoke business processing if staging fails. Do not apply this new flow to Customer Additional Info messages.
+
+4. Create a dedicated Spring-managed stored procedure caller class following the repository's established JDBC/Oracle stored-procedure patterns. Prefer using existing JdbcTemplate/DataSource configuration, Oracle collection/STRUCT handling patterns, and constructor injection. Do not open or close unmanaged connections incorrectly.
+
+5. Map XML fields to all required wrapper inputs using the actual POJO structure and attached SQL signature. Account for addressDetails, messageDetails/messageMappingEntry, branch code, customer code/number, action, authorization fields, and any required Oracle collection parameters. Handle multiple entries properly. Do not fabricate defaults, business rules, database types, or XML fields. If a required value cannot be derived, show the exact missing mapping.
+
+6. Process the wrapper's p_success_flag and p_error_message correctly. Treat non-success responses as failures, with enough logging context to diagnose the issue. Never report success on a failed DB operation. Preserve the current application's exception and MQ retry/error-handling contract; explicitly flag any conflict between MLVProcessor.run() logging behavior and MQ retry semantics instead of silently changing it.
+
+7. Examine transaction boundaries. The underlying Edit Customer Message Address procedure may use autonomous transactions/commits. Do not assume staging and business-table updates are one atomic transaction. Explain the risk and follow existing project transaction semantics. Do not introduce arbitrary commits or rollbacks.
+
+8. Add or update focused tests for:
+   - Successful staging followed by successful business processing.
+   - Staging failure prevents wrapper invocation.
+   - Customer Additional Info does not invoke the new wrapper.
+   - Wrapper returns failure/error message.
+   - Multi-entry XML mapping where applicable.
+   - Existing MLV tests continue to pass.
+
+9. Run the appropriate Gradle tests where the local environment permits. Report actual results only. Do not claim Oracle DEV compilation, MQ E2E success, or stored-procedure execution without evidence.
+
+IMPLEMENTATION RULES:
+- Make actual code edits in this repository.
+- Follow existing packages, naming conventions, logging, Spring dependency injection and JDBC patterns.
+- Keep changes minimal and production-quality.
+- Do not modify application.yml, spring-qas.properties, credentials, or unrelated configuration.
+- Do not change database SQL files from the Java repository.
+- Do not commit or push automatically.
+- Never invent the stored procedure signature if the SQL wrapper is not provided.
+
+Start by reporting which existing files and methods you found and your proposed integration point, then implement the changes. After implementation, list modified/created files, key mapping decisions, test results, and any remaining database-dependent verification.
+
+
+
+
+
+
+
+
+&&&₹&₹₹&₹&₹&₹&₹&₹&₹
+
 ./gradlew :qfxlmqfxstatic:test --console=plain && git add -u -- ':(glob)**/IncomingStaticMessageStagingProcedure.java' ':(glob)**/MLVProcessor.java' && git commit -m "C166472-42566 Complete staging validation and MLV processor review fixes" && git push origin HEAD
 
 
