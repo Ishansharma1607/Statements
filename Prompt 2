@@ -1,0 +1,424 @@
+
+You are working in the Citi QFXLM Oracle DB repository.
+
+TASK:
+Implement all DB wrapper changes requested by Mohan on November 3, 2026.
+
+IMPORTANT CONTEXT:
+I have already committed the existing Customer Additional Info and Customer Message Address wrappers in:
+
+Packages/PKG_QLM_INCOMING_STATIC_MSG.sql
+
+Both procedures are in the same package:
+
+1. prc_mlv_customer_addl_info
+2. prc_mlv_customer_msg_addr
+
+DO NOT recreate either procedure.
+
+Mohan reviewed our existing PR and requested several changes.
+
+The Java Customer Message Address implementation has already been updated and is being committed separately.
+
+You must now update the existing SQL package so its wrapper contracts match the Java implementation and Mohan's latest instructions.
+
+Read the complete package specification, body, existing Edit procedures, DDL, and the parameter-removal list provided by Mohan BEFORE modifying anything.
+
+==================================================
+PART 1: CUSTOMER ADDITIONAL INFO WRAPPER
+==================================================
+
+Procedure:
+PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info
+
+Underlying procedure:
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info
+
+A. ALPHA BRANCH CODE LOOKUP
+--------------------------
+
+The incoming XML contains an alpha branch code, not the internal numeric branch code.
+
+Mohan explicitly instructed us to resolve the internal branch code inside the wrapper.
+
+Use QLM_BRANCH to obtain BRANCH_CODE from the incoming alpha branch value.
+
+Inspect the actual QLM_BRANCH DDL to verify whether the lookup column is named ALPHA_BRANCH, ALPHA_BRANCH_CODE, or another existing column.
+
+Use the correct actual column name.
+
+Declare an internal variable, e.g.:
+
+lv_branch_code qlm_branch.branch_code%TYPE;
+
+Validate branch lookup according to the existing database rules.
+
+Handle no matching branch and ambiguous matches explicitly.
+
+Do not rely on an arbitrary MAX(branch_code) without ensuring uniqueness.
+
+Use lv_branch_code for subsequent customer validation, record lookup, and invocation of the underlying Edit procedure.
+
+Do not change the underlying Edit procedure signature.
+
+B. CUSTOMER EXISTS CHECK
+-----------------------
+
+Mohan specifically said to REMOVE the active_flag = 1 condition from the QLM_CUSTOMER validation.
+
+Existing logic has a query similar to:
+
+SELECT COUNT(1)
+INTO lv_customer_maintenance
+FROM qlm_customer
+WHERE branch_code = p_branch_code
+  AND customer_code = p_customer_code
+  AND active_flag = 1;
+
+Correct this so the customer is considered maintained regardless of whether it is active or inactive.
+
+Use the resolved internal branch code rather than the incoming alpha code.
+
+IMPORTANT:
+This instruction applies to the Customer Additional Info customer-validation check. Do not automatically remove active-flag validation from unrelated branches, tables or procedures.
+
+C. DERIVE CREATE OR EDIT ACTION
+------------------------------
+
+Mohan confirmed:
+
+Existing Customer Additional Info record:
+p_action = 'E'
+
+No existing Customer Additional Info record:
+p_action = 'C'
+
+The wrapper should determine the correct action.
+
+Inspect QLM_CUSTOMER_ADDL_INFO DDL.
+
+The screenshot showed a composite primary key involving:
+
+BRANCH_CODE
+CUSTOMER_CODE
+MODULE
+PRODUCT
+
+Verify the exact primary key and relevant business keys from the actual DDL.
+
+Check for an existing record using the complete applicable key.
+
+Do not use only BRANCH_CODE and CUSTOMER_CODE if MODULE and PRODUCT are also required to uniquely identify the row.
+
+Use a local variable such as:
+
+lv_action VARCHAR2(1);
+
+If record exists:
+lv_action := 'E';
+
+Otherwise:
+lv_action := 'C';
+
+Pass the derived value to the existing Edit procedure.
+
+Do not alter unrelated business behavior.
+
+D. VERSION HANDLING
+-------------------
+
+This is an explicit requirement from Mohan.
+
+When the Customer Additional Info record ALREADY EXISTS:
+
+Fetch its current VERSION value from the matching existing database row.
+
+Pass that existing version to the Edit procedure through p_version.
+
+When the record DOES NOT EXIST:
+
+Pass version 0.
+
+Do not hardcode version 1 for new records.
+
+Use a local variable with the correct table-column type, e.g.:
+
+lv_version qlm_customer_addl_info.version%TYPE;
+
+Determine action and version consistently from the same record lookup.
+
+Handle multiple matches safely.
+
+For an existing record:
+  lv_action = 'E'
+  lv_version = existing row's VERSION
+
+For a new record:
+  lv_action = 'C'
+  lv_version = 0
+
+Pass both to:
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info
+
+Use the actual underlying procedure parameter names.
+
+If p_version currently exists as a wrapper input, inspect whether it should be removed or retained for compatibility. The authoritative version value must be derived according to Mohan's rule.
+
+E. REMOVE UNNECESSARY WRAPPER INPUT PARAMETERS
+----------------------------------------------
+
+Mohan reviewed the existing prc_mlv_customer_addl_info signature and identified approximately 50-60 parameters that are unnecessary because the incoming MLV XML does not provide those values.
+
+I will provide his complete parameter list with individual markings such as:
+
+-- removed
+-- remove till here
+-- dont
+
+IMPORTANT:
+Read the ENTIRE list carefully, including exceptions.
+
+Do not blindly remove one continuous block from the first marked parameter to the last, because some parameters may be explicitly marked to retain.
+
+The screenshots indicate a removal section involving parameters around:
+
+p_mxn_statement_setup
+p_mxn_customer_profile
+p_mxn_executive_phone_number
+p_mxn_executive_name
+p_safe_keeping_acc_no
+p_pass_through_account_flag
+...
+p_options_scrub_account
+
+But the actual attached list is authoritative.
+
+Do not assume every parameter in this range is removable.
+
+For each candidate parameter:
+
+1. Check whether the value is available in Customer Additional Info XML.
+2. Check Mohan's explicit removal/retention annotation.
+3. Check the existing wrapper parameter.
+4. Check the underlying Edit procedure's required parameter.
+5. Check the QLM_CUSTOMER_ADDL_INFO DDL for:
+   - Nullable columns
+   - NOT NULL columns
+   - DEFAULT 0
+   - DEFAULT 1
+   - Other defaults
+6. Determine the correct fixed value or NULL for the underlying procedure.
+
+Mohan's instruction:
+
+For fields absent from XML:
+- Remove unnecessary inputs from the MLV wrapper specification and body.
+- Pass NULL to the underlying Edit SP where the business contract allows NULL.
+- Pass explicit 0 where the specification/DDL requires zero.
+- Respect other required DDL/business defaults.
+- Preserve inputs that are actually needed.
+
+Oracle column DEFAULT values do not automatically apply when a procedure explicitly inserts NULL. Therefore confirm how the underlying Edit procedure handles supplied NULL values.
+
+Do NOT remove these parameters from:
+PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info
+
+Only simplify our MLV wrapper's external input contract and adjust its delegation.
+
+Do NOT remove existing columns from the actual database table.
+
+Update both package specification and body consistently.
+
+Do not delete valid XML mappings.
+
+After simplifying the wrapper, report its final parameter signature and identify corresponding changes required in the Java caller, if any.
+
+==================================================
+PART 2: CUSTOMER MESSAGE ADDRESS WRAPPER
+==================================================
+
+Procedure:
+PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_msg_addr
+
+Underlying procedure:
+PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr
+
+These are the MORNING review changes.
+
+A. ALPHA BRANCH CODE
+-------------------
+
+The latest Java implementation passes:
+
+p_alpha_branch_code
+
+The Java numeric branch lookup was removed.
+
+Update the existing SQL wrapper specification and body to accept the incoming alpha branch code, with the correct QLM_BRANCH column type.
+
+Resolve the internal numeric branch code inside the wrapper.
+
+Validate active branch mapping according to the actual applicable QLM_BRANCH rules.
+
+Handle missing or ambiguous mappings.
+
+Pass the internal resolved branch code to the underlying Edit Customer Message Address SP.
+
+Do not pass a VARCHAR2 alpha branch code into the underlying numeric branch-code parameter.
+
+B. CREATE / EDIT ACTION
+----------------------
+
+The latest Java Customer Message Address caller passes:
+
+p_action = NULL
+
+The DB wrapper must derive the appropriate action when NULL.
+
+Inspect QLM_CUSTOMER_MSG_ADDR and the underlying Edit SP.
+
+Use the actual business key, expected to include:
+
+branch_code
+modules
+customer_code
+media
+location
+
+Verify the complete key and how active/inactive and maker-checker records are treated.
+
+Derive:
+
+'C' for Create
+'E' for Edit
+
+Preserve valid explicit action values if supported by the wrapper contract.
+
+Do not create duplicate records.
+
+Pass the resolved action to the underlying Edit SP.
+
+C. PRESERVE THE EXISTING MAPPING
+--------------------------------
+
+Do not unnecessarily rewrite the Customer Message Address wrapper.
+
+Preserve:
+
+- Main scalar fields
+- TAB_CUST_MSG_ADDR_PII
+- TAB_CUST_MSG_ADDR_TYPES
+- TAB_CUST_EMAILADDRESS_PII
+- Applicable fax and DocuSign collection handling
+- OUT success/error parameters
+- Existing customer validation
+- Existing field mapping logic
+
+The Java XML/Oracle mapping changes were already completed separately.
+
+Only modify what is necessary for the alpha-branch and action-resolution changes.
+
+==================================================
+PART 3: FIX THE LARGE PR DIFF / FORMATTING
+==================================================
+
+Mohan specifically commented that the DB PR contains too many changed lines.
+
+He suspects tabs, spacing, indentation, line endings or unresolved merge conflicts.
+
+Inspect the current working tree and compare our feature branch against the PR target branch.
+
+Check for:
+
+- Merge conflict markers
+- Accidental whitespace-only changes
+- Tab versus space changes
+- Line-ending changes
+- Unnecessary package-wide formatting
+- Duplicated procedures
+- Unrelated package modifications
+
+Preserve the repository's existing SQL formatting conventions.
+
+Do not reformat the entire 2000+ line package.
+
+Limit the diff to the two wrapper procedures, related package-spec declarations, change history and genuinely necessary changes.
+
+Do not silently discard other developers' changes while resolving the PR conflict.
+
+Show the final clean diff.
+
+==================================================
+PART 4: SIGNATURE AND DEPENDENCY VALIDATION
+==================================================
+
+Verify both wrapper signatures against their actual Java callers.
+
+Customer Message Address Java now expects:
+p_alpha_branch_code
+p_action = NULL
+
+Customer Additional Info may require Java binding changes because Mohan asked to remove many wrapper parameters.
+
+Do not edit the Java repository from this DB task.
+
+Instead produce an exact list of any Java-side parameter changes needed after the SQL changes.
+
+Check all parameter types, parameter names, positions, Oracle collection types, and OUT parameters.
+
+Preserve the existing underlying Edit SP contracts.
+
+Do not change unrelated stored procedures or database tables.
+
+==================================================
+PART 5: TESTING AND FINAL DELIVERABLE
+==================================================
+
+Make the SQL modifications in the existing file.
+
+Check:
+
+1. Package specification/body consistency.
+2. Customer lookup for active and inactive customers.
+3. Existing Customer Additional Info -> E.
+4. New Customer Additional Info -> C.
+5. Existing version passed correctly.
+6. New version = 0.
+7. Alpha branch resolution.
+8. Correct composite-key record lookup.
+9. Every removed input has a correct NULL/default mapping.
+10. Underlying Edit SP calls have all required parameters.
+11. Customer Message Address action determination.
+12. Customer Message Address alpha-branch compatibility.
+13. Clean Git diff with minimal whitespace changes.
+
+If authorized DEV Oracle access is available, compile the updated package spec and body and check USER_OBJECTS and USER_ERRORS.
+
+Otherwise report that DEV compilation is pending. Do not claim success.
+
+DO NOT:
+- Commit automatically
+- Push automatically
+- Modify production data
+- Remove underlying Edit SP parameters
+- Reformat unrelated SQL
+- Invent missing parameter defaults
+- Change unrelated DDL
+- Modify unrelated procedures
+
+FINAL REPORT:
+
+A. Customer Additional Info changes completed
+B. Customer Message Address changes completed
+C. Exact removed wrapper parameters
+D. Exact retained parameters
+E. Derived NULL/0/default values for removed inputs
+F. Create/Edit and version handling
+G. Branch resolution details
+H. Any Java caller changes still required
+I. Git diff summary and conflict resolution
+J. Oracle compilation results or blockers
+
+Implement the verified changes, not just recommendations.
+
+If the supplied parameter-removal list is incomplete or ambiguous, safely complete the independent fixes and report exactly which parameters still need confirmation instead of guessing.
