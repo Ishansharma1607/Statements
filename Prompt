@@ -1,0 +1,473 @@
+
+You are working on my Citi QFXLM Java Spring Boot / Gradle repository, qfxlmqfxstatic.
+
+TASK:
+Complete and correct the MLV Customer Message Address implementation based on Mohan's code-review instructions from November 2 and November 3, 2026.
+
+This is a continuation of your previous implementation, NOT a new feature from scratch. Inspect the current working tree and preserve already correct code.
+
+I will attach the actual Excel:
+QFXLM_QFX_mapping_message_address_Ver2.xlsx
+
+The sample customerMessageAddress.xml is already committed in the repository.
+
+The DB wrapper is in a DIFFERENT database repository:
+PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_msg_addr
+
+It delegates to:
+PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr
+
+Read the actual wrapper SQL when available. Do not guess SQL procedure signatures, type attributes, or Oracle collection layouts.
+
+==================================================
+PHASE 1 — INSPECT EXISTING IMPLEMENTATION
+==================================================
+
+Before editing, inspect:
+
+- MLVProcessor.java
+- MLVService.java and its actual interface/implementation
+- MlvCustomerMessageAddressProcedure.java
+- IncomingStaticMessageStagingDao.java
+- IncomingStaticMessageStagingProcedure.java
+- MLVStaticReceiver.java
+- Existing Customer Additional Info processing
+- CustomerMessageAddress and related XML POJO classes
+- Existing Oracle ARRAY / STRUCT common utilities
+- Relevant unit tests
+- The committed sample customerMessageAddress.xml
+- Every sheet of the attached Excel mapping workbook
+- New DB wrapper specification and body, if accessible
+
+Your previous implementation reportedly passed 109 JUnit tests. Do not assume the current working tree still passes; rerun them after changes.
+
+Also inspect the result of your earlier code-review work. Preserve any verified fixes.
+
+First identify which Mohan requirements are already implemented and which are still missing. Then apply the necessary changes.
+
+==================================================
+PHASE 2 — MOHAN'S SERVICE LAYER CHANGE
+==================================================
+
+Mohan explicitly requested that MLVProcessor should only dispatch processing based on the incoming static message type.
+
+Required flow:
+
+MLVStaticReceiver
+  -> MLVProcessor
+  -> XML parsing
+  -> IncomingStaticMessageStagingDao
+  -> successful staging
+  -> processMlvStatic()
+  -> MLVService
+  -> corresponding Oracle procedure caller
+
+In MLVProcessor.processMlvStatic():
+
+1. For CUSTOMER_ADDL_INFO_STATIC_TYPE:
+   Preserve the existing call to:
+   mlvService.processCustAddlInfo(flexstatic)
+
+2. For CUSTOMER_MESSAGE_ADDRESS_STATIC_TYPE:
+   Call a dedicated MLVService method:
+   mlvService.processCustomerMessageAddress(flexstatic)
+
+   Use project naming conventions if this exact method name differs.
+
+3. Do not directly invoke MlvCustomerMessageAddressProcedure from MLVProcessor.
+
+4. Implement processCustomerMessageAddress in the existing MLVService service layer, following the same structure as processCustAddlInfo.
+
+5. The service should delegate to the existing MlvCustomerMessageAddressProcedure class.
+
+6. Avoid duplicate stored procedure invocation.
+
+7. Preserve the rule that business processing runs only after confirmed successful XML staging.
+
+8. Preserve Customer Additional Info behavior and other static message types.
+
+9. Update constructor injection, Spring wiring and affected tests.
+
+Mohan's intention is that future business-processing changes remain inside MLVService, with minimal changes to MLVProcessor.
+
+Do not introduce a second or duplicate MLVService class if one already exists.
+
+==================================================
+PHASE 3 — MOVE BRANCH RESOLUTION TO DB WRAPPER
+==================================================
+
+Mohan explicitly said Java should NOT separately query QLM_BRANCH to convert the alpha branch code to the numeric internal branch code.
+
+The incoming XML contains:
+
+<addressDetails>
+    <branchCode>IE6</branchCode>
+</addressDetails>
+
+Current Java code has a BRANCH_LOOKUP_SQL similar to:
+
+SELECT MAX(branch_code)
+FROM qlm_branch
+WHERE alpha_branch_code = ?
+AND active_flag = 1
+
+Remove this extra lookup from Java.
+
+Java should pass the incoming alpha branch code directly to the NEW wrapper, through a correctly typed wrapper parameter.
+
+Inside the DB wrapper, resolve the active internal branch code from QLM_BRANCH before invoking the underlying Edit Customer Message Address procedure.
+
+IMPORTANT:
+
+- Do not pass an alpha code blindly into an existing numeric p_branch_code parameter.
+- The wrapper interface and Java binding must agree.
+- Prefer an explicitly named p_alpha_branch_code parameter if appropriate.
+- Use the actual QLM_BRANCH schema and existing database conventions.
+- Handle unknown, inactive or ambiguous branch mappings as failures.
+- Do not hide duplicate branch mappings with MAX() without verifying that this is required behavior.
+- Preserve main-table customer validation.
+- If the DB repository is not accessible, give me an exact proposed SQL spec/body patch and flag that coordinated DB deployment is required.
+- Do not claim this change is complete on the database side until the actual wrapper is updated and compiled.
+
+==================================================
+PHASE 4 — EXACT XML TO ORACLE MAPPING
+==================================================
+
+Mohan reviewed the actual mapping workbook.
+
+The four relevant workbook sheets are:
+
+1. QLM_CUSTOMER_MSG_ADDR
+2. QLM_CUST_MSG_ADDR_PII
+3. QLM_CUST_EMAIL_ADDR_PII
+4. MSG_TYPE
+
+These are the authoritative mapping references.
+
+Do not assume all values belong to a single Oracle table or collection.
+
+A. MAIN CUSTOMER MESSAGE ADDRESS DATA
+--------------------------------------
+
+Map the fields from addressDetails into the wrapper's scalar parameters based on QLM_CUSTOMER_MSG_ADDR.
+
+Inspect the workbook for:
+
+- BRANCH_CODE
+- MODULES
+- CUSTOMER_CODE
+- MEDIA
+- LOCATION
+- GCN_MAPPING_BIC
+- Language
+- Active flag
+- Version
+- Confirmation suppression flags
+- Tag fields
+- Copy branch flags
+- Other procedure inputs
+
+Important sample XML fields include:
+
+branchCode
+modules
+customerNumber
+media
+location
+language
+gcnMappingBic
+activeFlag
+versionNo
+fiStraightThrough
+copiedFromPriBranchFlag
+copyToSubBranchFlag
+
+Verify exact naming, types, and mapping rules.
+
+The workbook has separate MLV Migration Logic and QFXLM Migration Logic columns. Check which rules apply to inbound MLV processing.
+
+Do not blindly copy values from the wrong mapping column.
+
+Where the workbook specifies conditional behavior for PAY/CONF message categories, implement the verified condition.
+
+Where the workbook explicitly specifies NULL or zero for absent fields, follow that rule only after verifying it applies to this workflow.
+
+Do not hardcode p_auto_auth_flag, maker ID, action, version, or other business-critical defaults without confirming the expected contract.
+
+B. TAB_CUST_MSG_ADDR_PII
+------------------------
+
+Mohan specifically showed the XML address fields and asked for them to populate the Customer Message Address PII collection.
+
+Map:
+
+name1          -> NAME_1
+name2          -> NAME_2
+address1       -> ADDRESS_1
+address2       -> ADDRESS_2
+address3       -> ADDRESS_3
+address4       -> ADDRESS_4
+counterparty1  -> COUNTERPARTY_1
+counterparty2  -> COUNTERPARTY_2
+
+Include branch, customer, module, media, location, and other required fields according to the SQL object type.
+
+Mohan showed the QLM_CUST_MSG_ADDR_PII Excel sheet.
+
+That sheet also specifies legacy/null handling for counterparty fields. Compare the actual incoming XML with the workbook rule and document the decision.
+
+In particular, distinguish:
+- Field absent from the incoming contract
+- Field present but empty
+- Field present with a real value
+- Workbook explicitly requiring NULL
+
+Do not automatically convert all empty XML fields into invented values.
+
+Verify the exact Oracle STRUCT attribute order and SQL types.
+
+C. TAB_CUST_EMAILADDRESS_PII
+----------------------------
+
+Mohan showed a separate email-address collection.
+
+Map the following from addressDetails:
+
+addressType       -> ADDRESS_TYPE
+replyToEmailAddr  -> REPLY_TO_EMAIL_ADDR
+toEmailAddr       -> TO_EMAIL_ADDR
+ccEmailAddr       -> CC_EMAIL_ADDR
+
+Verify the actual attribute names/order against the Oracle SQL type and QLM_CUST_EMAIL_ADDR_PII workbook sheet.
+
+Mohan discussed EMAIL and SWIFT media handling.
+
+Inspect the workbook and existing QFXLM portal implementation to establish precisely when the email collection must contain a row and when it must be empty.
+
+Do not assume SWIFT messages always have email values.
+
+Do not create an empty email-address record merely because the collection parameter exists.
+
+Preserve valid EMAIL information when present.
+
+D. TAB_CUST_MSG_ADDR_TYPES
+--------------------------
+
+Every messageDetails/messageMappingEntry should be mapped into the Customer Message Address Types collection.
+
+Preserve all valid entries, not just the first one.
+
+Inspect and map:
+
+messageType
+formatName
+primaryAddressFlag
+suppNewConfFlag
+suppAmendConfFlag
+suppTracerConfFlag
+suppNewEodConfFlag
+suppNewCmsConfFlag
+suppAmendCmsConfFlag
+
+Verify all remaining attributes of the Oracle object type.
+
+Use the actual MSG_TYPE Excel sheet to decide message type translation, category, priority and any module-message-type mapping.
+
+==================================================
+PHASE 5 — CRITICAL MESSAGE-TYPE TRANSLATION
+==================================================
+
+Mohan explicitly mentioned that MLV XML message-type conventions differ from QFXLM conventions.
+
+The sample XML contains entries such as:
+
+FX_AMENDMENT
+FX_CONFIRMN / FX confirmation entry
+FX_REVERSAL
+
+(Use the actual XML text as the source of truth.)
+
+The Excel MSG_TYPE sheet has separate columns:
+
+Module
+Module Message Type
+Message Type
+Priority
+Categorization
+
+Examples visible in the workbook:
+
+Module FX:
+- Group FX_CONF includes FX confirmation/amendment/reversal message entries.
+
+Module MM:
+- Group MM_CONF includes MM confirmation-related entries.
+
+Payment-related entries belong to FX_PAY or MM_PAY based on the mapping.
+
+CRITICAL:
+Do not blindly replace every individual messageType with FX_CONF or MM_CONF.
+
+There is a difference between the group/module message type and the actual message type.
+
+For example:
+FX_AMENDMENT can belong to FX_CONF, while FX_AMENDMENT remains the individual message-type code where required.
+
+Inspect the exact SQL object type and Excel mapping to determine whether both values are needed and which value must be passed for each field.
+
+Use verified mappings, not generic string replacement.
+
+Support all messageMappingEntry items.
+
+If multiple XML message types map to the same module message type, follow the workbook's defined grouping/priority rules.
+
+Do not silently discard entries or reject them solely because several belong to the same group.
+
+If an actual message type is unknown, fail explicitly or use only a documented fallback from the mapping specification.
+
+Do not invent mappings for unfamiliar message types.
+
+Prefer an existing project mapping implementation/configuration over building a conflicting duplicate.
+
+==================================================
+PHASE 6 — REUSE EXISTING ORACLE ARRAY UTILITIES
+==================================================
+
+Mohan specifically asked us to follow the existing project approach for creating Oracle ARRAY/STRUCT inputs.
+
+The previous Java implementation creates arrays using helpers such as:
+
+createOracleArray(...)
+addresssPiiRows(...)
+messageAddressTypeRows(...)
+emailAddressRows(...)
+
+Inspect the common library already used for static staging.
+
+Reuse its existing Oracle STRUCT/ARRAY creation patterns and connection handling where compatible.
+
+Do not duplicate low-level Oracle object creation logic unnecessarily.
+
+Mohan also showed a reference implementation in the separate qfxlm-portal repository:
+
+CustomerMessageAddrModel.java
+submitToAudit(...)
+
+That implementation builds Oracle collections, including:
+
+TAB_CUST_MSG_ADDR_TYPES
+
+It also contains email-address handling.
+
+Use this as a reference for attribute order and business behavior, not as a reason to copy deprecated JDBC code wholesale.
+
+Prefer project-supported APIs and connection lifecycle management.
+
+Verify all collection names and object types from Oracle SQL definitions.
+
+The relevant inputs include:
+
+TAB_CUST_MSG_ADDR_PII
+TAB_CUST_MSG_ADDR_TYPES
+TAB_CUST_EMAILADDRESS_PII
+
+There may also be fax and DocuSign collection inputs.
+
+Build their empty or populated collections according to the actual stored-procedure contract. Do not fabricate records.
+
+Release resources as appropriate and keep collection creation on a valid Oracle JDBC connection.
+
+==================================================
+PHASE 7 — REVIEW THE EARLIER COPILOT ASSUMPTIONS
+==================================================
+
+The earlier implementation made several decisions that need verification:
+
+1. Choosing action C or E based on an existence query.
+2. Setting p_auto_auth_flag = 1.
+3. Hardcoded or default flag values.
+4. Passing NULL for missing tag/GCN/counterparty fields.
+5. Empty fax and DocuSign collections.
+6. Forcing message-entry flags to be identical.
+7. Creating a customer-message-address record based on a Java existence check.
+8. Logging an error in MLVProcessor.run() without propagating it to the MQ listener.
+
+Review each against the Excel, SQL and current code.
+
+Classify each as VERIFIED, FIXED or NEEDS BUSINESS CONFIRMATION.
+
+Do not introduce new assumptions.
+
+Do not change MQ redelivery or transaction semantics without demonstrating how the staging and business-processing procedures behave.
+
+Staging and business updates may commit independently.
+
+A business-processing failure after successful staging must never be reported as successful business processing.
+
+Explain the retry/idempotency risk before making changes to exception propagation.
+
+==================================================
+PHASE 8 — TESTS
+==================================================
+
+Update and add focused tests covering:
+
+1. Customer Additional Info routes to its existing MLVService method.
+2. Customer Message Address routes to its new MLVService method.
+3. MLVProcessor does not call the business stored procedure directly.
+4. Successful staging precedes business processing.
+5. Staging failure prevents business invocation.
+6. Service delegates exactly once to the correct procedure caller.
+7. Branch alpha code passes to the wrapper without an extra Java lookup.
+8. Main table scalar parameter mapping.
+9. Address PII collection attribute order and values.
+10. Email collection behavior for applicable media.
+11. Empty/non-applicable email handling.
+12. Multiple messageMappingEntry records.
+13. FX_CONF and MM_CONF grouping versus individual message-type values.
+14. PAY versus CONF flag rules.
+15. Null/optional field behavior.
+16. Wrapper success/error output handling.
+17. Oracle ARRAY/STRUCT binding and resource handling.
+18. Existing tests remain unaffected.
+
+Run the relevant Gradle module tests and the complete applicable unit-test suite.
+
+Report actual counts and actual failures.
+
+Do not claim Oracle compilation or DEV end-to-end success without executing and verifying them.
+
+==================================================
+PHASE 9 — IMPLEMENTATION SCOPE AND OUTPUT
+==================================================
+
+Make actual minimal Java code changes where the requirements are verified.
+
+For database changes in the separate repository, provide an exact SQL diff if that repository is not accessible.
+
+Do not edit production data.
+
+Do not modify unrelated application.yml, properties files, credentials, local MQ configurations, or unrelated source files.
+
+Do not commit or push automatically.
+
+Do not rewrite the previously working XML staging logic.
+
+Do not make unrelated refactors.
+
+FINAL RESPONSE REQUIRED:
+
+A. Summary of what was already implemented
+B. Exact changes made for Mohan's November 2 and 3 review
+C. Files created/modified
+D. Table mapping:
+   XML field -> Oracle parameter/collection -> target table
+E. Message-type conversion mapping with source workbook rows
+F. Remaining assumptions requiring confirmation
+G. SQL wrapper changes needed in the DB repository
+H. Actual test/build results
+I. What is still needed for Oracle DEV and MQ end-to-end testing
+
+Your goal is a production-quality implementation that matches Mohan's architecture and the actual Jira mapping specification.
+
+Do not stop after only giving recommendations. Implement all changes supported by the code and attached specifications, and identify blockers precisely.
