@@ -1,3 +1,27 @@
+
+p_mxn_customer profile
+
+IN
+
+qlm customer
+
+p_mxn_executive_phone_number
+
+IN
+
+qlm_customer
+
+pmxn executive name
+
+IN
+
+qlm customer
+
+keep above 3 in params.
+
+have marked it wrongly 3 alone
+
+
 Review your completed MLV Customer Message Address Java implementation against the actual database package SQL and existing project behavior. Do not make assumptions.
 
 1. Verify that every parameter position, Oracle SQL type, collection type, and OUT parameter in MlvCustomerMessageAddressProcedure matches PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_msg_addr exactly.
