@@ -1,0 +1,196 @@
+You are working in the QFXLM database repository on the current feature branch.
+
+File: "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+Procedure: "prc_mlv_customer_addl_info"
+
+Task: Implement all of Mohan's November 3–4 review comments for the Customer Additional Info MLV wrapper.
+
+IMPORTANT: I will provide the complete list of 155 required parameters that must be retained.
+
+Use my supplied list as the SINGLE SOURCE OF TRUTH for the wrapper's retained parameters.
+
+1. Reduce the wrapper to exactly 155 required parameters
+
+I will paste the approved list below:
+
+[PASTE MOHAN'S COMPLETE 155-PARAMETER LIST HERE]
+
+Requirements:
+
+- Retain every parameter in the supplied list, with exactly the approved names and order.
+- Remove every other unnecessary IN parameter from the MLV wrapper's package specification and body.
+- Do not retain additional fields simply because they exist in the original procedure.
+- Do not remove any of the 155 approved parameters.
+- Preserve the existing "p_success_flag" and "p_error_message" OUT parameters separately, unless they are explicitly included in my supplied 155-parameter list.
+- Ensure the specification and body signatures match exactly.
+- Preserve Oracle datatypes compatible with the underlying database definitions.
+- Match parameter ordering against the Java caller.
+
+Count and report the final retained IN parameters and OUT parameters separately.
+
+Do not assume the previous 154-IN count is correct. The new approved list supersedes it.
+
+2. Removed parameters must still be handled internally
+
+The wrapper invokes:
+
+"PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info"
+
+Do NOT modify that existing procedure.
+
+For parameters removed from the wrapper's public signature:
+
+- Pass "NULL" internally for fields that do not have values in the incoming XML.
+- Where a field requires a numeric zero or an established default, pass "0".
+- Inspect the underlying procedure signature, column constraints, and existing implementation before choosing between "NULL" and "0".
+- Preserve all required underlying procedure arguments.
+- Use named parameter bindings.
+- Do not accidentally shift parameter positions.
+- Do not fabricate missing business data.
+
+The objective is to simplify the MLV wrapper without breaking the existing Edit SP.
+
+3. Customer validation
+
+Find the check against "QLM_CUSTOMER".
+
+Remove:
+
+"AND active_flag = 1"
+
+Mohan confirmed that the customer may be active or inactive.
+
+Validate customer existence using the resolved numeric branch code and customer code.
+
+Preserve meaningful error handling if the customer does not exist.
+
+4. Dynamic action selection
+
+Before invoking the Edit SP, check "QLM_CUSTOMER_ADDL_INFO" to determine whether the record already exists.
+
+Inspect the table's actual primary key and use the complete identifying combination.
+
+If the record exists:
+
+"lv_action := 'E';"
+
+If it does not exist:
+
+"lv_action := 'C';"
+
+Pass the resolved action to the underlying Edit SP.
+
+Do not hardcode the action or rely on an incoming action value.
+
+5. Dynamic version selection
+
+For the same Customer Additional Info record:
+
+- Existing record: fetch the existing "VERSION".
+- New record: use version "0".
+
+Pass that resolved value as "p_version" when invoking the Edit SP.
+
+Ensure action and version are derived consistently for the same record.
+
+6. Auto-authorization
+
+Mohan explicitly instructed that the underlying Edit SP should receive:
+
+"p_auto_auth_flag => 1"
+
+Keep the wrapper input parameter if it appears in the 155 approved parameters, but always pass "1" internally to the underlying Edit SP.
+
+7. Alpha branch code conversion
+
+The Java caller sends an alpha branch code as a string.
+
+The incoming wrapper parameter must remain character-based:
+
+"qlm_branch.alpha_branch_code%TYPE"
+
+The resolved branch code must use:
+
+"qlm_branch.branch_code%TYPE"
+
+Lookup must use "QLM_BRANCH" and the incoming alpha branch code.
+
+Preserve the existing count validation for zero or multiple active branch matches.
+
+Mohan requested that the branch retrieval use:
+
+"MAX(branch_code)"
+
+and
+
+"MAX(branch_description)"
+
+instead of a direct SELECT that can cause "TOO_MANY_ROWS".
+
+Do not allow MAX to hide duplicate branch mappings. Retain the separate uniqueness validation.
+
+Use the resolved numeric branch code for downstream validation and the Edit SP call.
+
+8. Remove unnecessary ref-cursor helper
+
+Inspect:
+
+"prc_close_ref_cursor"
+
+Mohan said this helper is unnecessary in the Customer Additional Info wrapper.
+
+Remove it and any obsolete references if it is not required for correct processing.
+
+Do not disturb unrelated procedures.
+
+9. Keep the SQL diff minimal
+
+Mohan observed excessive changes in the previous PR due to spacing, tabbing, and possible conflict resolution.
+
+- Do not reformat the entire package.
+- Preserve existing indentation and tabs.
+- Preserve the change history.
+- Do not modify unrelated procedures.
+- Do not modify the original Edit Customer Additional Info procedure.
+- Verify that no merge-conflict markers remain.
+- Ensure the package specification and body remain synchronized.
+
+10. Verify the complete implementation
+
+After implementing:
+
+1. Verify the exact 155 approved retained parameters against my provided list.
+2. Verify the package specification and body match.
+3. Verify the two OUT parameters are preserved.
+4. Verify all removed wrapper inputs have valid internal NULL/0 handling.
+5. Verify the underlying Edit SP signature remains unchanged.
+6. Verify customer existence works for active and inactive customers.
+7. Verify action "E" for existing records and "C" for new records.
+8. Verify the correct existing version or zero is passed.
+9. Verify auto-authorization is passed as "1".
+10. Verify alpha branch resolution, including duplicate/missing branch handling.
+11. Verify the unnecessary ref-cursor code is removed.
+12. Run "git diff --check" and inspect the focused diff.
+
+If an authorized Oracle DEV connection is available, compile the package specification and body and check compilation errors.
+
+If no DEV connection is available, report that Oracle compilation is pending. Never claim compilation succeeded without actually executing it.
+
+11. Final output
+
+Provide:
+
+- Final retained parameter count.
+- Final OUT parameter count.
+- Any difference between the supplied list and the implemented signature.
+- Removed parameters and how their underlying Edit SP arguments are handled.
+- Summary of all completed Mohan review changes.
+- Any Java/SQL signature mismatch.
+- Actual compilation status.
+- Exact modified files.
+- Remaining issues.
+
+Do not commit or push automatically.
+
+Implement the changes directly in the working tree and show me the results.
