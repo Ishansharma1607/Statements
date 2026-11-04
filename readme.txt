@@ -1,4 +1,6 @@
+Hi Mohan, I verified the alpha branch-code datatype in both wrappers. Both are already using qlm_branch.alpha_branch_code%TYPE, which is VARCHAR2(3), and the internal branch code uses the numeric datatype.
 
+The package spec and body are consistent. DEV compilation is still pending. I'll verify that and update you.
 
 You are working in the Citi QFXLM Oracle DB repository.
 
