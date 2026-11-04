@@ -1,3 +1,58 @@
+We have a new DEV testing issue in the Customer Additional Info wrapper.
+
+Error reported by Mohan:
+
+"ORA-01400: cannot insert NULL into ("QLM_OWNER"."QLM_CUSTOMER_ADDL_INFO_Q"."MM_DISABLE_OBC_TA_RCV_FLAG")"
+
+Repository: qfxlm-db
+File: "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+Wrapper: "prc_mlv_customer_addl_info"
+Underlying procedure: "PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info"
+
+Task
+
+Fix the wrapper's default-value mappings for removed input parameters.
+
+Previously, we reduced the public wrapper signature to the 155 agreed required input parameters, keeping the two OUT parameters. Parameters removed from this public signature are still passed internally as NULL or 0 when calling the existing Edit Customer Additional Info procedure.
+
+Mohan has now identified that some of those removed parameters correspond to NOT NULL database columns, and passing NULL causes ORA-01400.
+
+Instructions
+
+1. Inspect the current "prc_mlv_customer_addl_info" implementation and its call to "PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info".
+
+2. Find the underlying procedure's full parameter signature and implementation, including how the values are inserted into "QLM_CUSTOMER_ADDL_INFO_Q" and other related tables.
+
+3. Inspect the available DDL definitions for "QLM_CUSTOMER_ADDL_INFO_Q", "QLM_CUSTOMER_ADDL_INFO", and any relevant related tables. Identify column nullability, types, constraints, and database defaults.
+
+4. Start by tracing "MM_DISABLE_OBC_TA_RCV_FLAG" to the corresponding edit-procedure parameter. Determine its correct default value. If the database contract specifies numeric 0 as the default, pass 0 instead of NULL in the wrapper's delegation.
+
+5. Audit ALL removed parameters currently mapped to NULL. Determine whether their destination columns are NOT NULL and whether the edit procedure substitutes defaults internally. Supply appropriate values for fields that require them.
+
+6. Do not blindly change every NULL to 0. Numeric flags, dates, character fields, and nullable fields must be handled according to their actual schema and established business defaults.
+
+7. Keep the agreed 155 public IN parameters and two OUT parameters unchanged, in exactly the approved order. Do not reintroduce removed fields.
+
+8. Do not change "PKG_CUSTOMER_ADDL_INFO_MGMT" or its public contract. Modify only the MLV wrapper unless evidence shows a problem requiring Mohan's approval.
+
+9. Preserve earlier review changes: alpha branch code resolution within the wrapper, customer existence validation without requiring active_flag=1, action E/C derived from existing additional-info record, correct existing version or 0 for new records, and auto authorization flag 1 when calling the underlying edit procedure.
+
+10. Preserve the Customer Message Address wrapper and existing staging procedures. Avoid unrelated changes and unnecessary formatting differences.
+
+Verification
+
+- Show each changed mapping as: underlying parameter, target column, nullability, previous value, new value, and reason.
+- Identify any required default whose correct value cannot be established from the repository. Do not invent values.
+- Verify signature alignment, procedure calls, and PL/SQL syntax.
+- Do not claim successful DEV compilation unless it was actually performed.
+- Provide a concise diff summary.
+
+Important: Fix the immediate "MM_DISABLE_OBC_TA_RCV_FLAG" error, but also prevent the next ORA-01400 caused by other removed parameters mapped to NULL.
+
+
+
+---_-_-_-₹-₹-₹
+
 Investigate the DEV failure in "PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info".
 
 Mohan reported:
