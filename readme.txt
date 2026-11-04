@@ -1,4 +1,123 @@
 
+
+You are working in the Citi QFXLM Oracle DB repository.
+
+FILE:
+Packages/PKG_QLM_INCOMING_STATIC_MSG.sql
+
+TASK:
+Apply Mohan's latest November 4, 2026 review comment concerning the alpha branch-code datatype in BOTH existing MLV wrapper procedures.
+
+Procedures:
+1. prc_mlv_customer_addl_info
+2. prc_mlv_customer_msg_addr
+
+BACKGROUND:
+Both wrappers receive the alpha branch code from Java/MLV XML, not the internal numeric branch code.
+
+Mohan noticed that the wrapper branch-code parameter may still be declared using the numeric internal branch-code datatype. This caused a possible Java-to-Oracle parameter mismatch.
+
+He specifically instructed us to use a character datatype for the incoming alpha branch code.
+
+REQUIRED CHANGES:
+
+1. Inspect BOTH package specifications and package bodies.
+
+2. Verify the incoming alpha branch parameter datatype in BOTH wrappers.
+
+3. The incoming parameter must be character-based, preferably:
+
+   p_alpha_branch_code IN qlm_branch.alpha_branch_code%TYPE
+
+   Use VARCHAR2 with an appropriate length if the existing database schema or package conventions require it.
+
+   IMPORTANT:
+   Verify the actual QLM_BRANCH column name and datatype from repository DDL.
+
+4. Do NOT declare the incoming alpha branch parameter as:
+
+   qlm_branch.branch_code%TYPE
+
+   if BRANCH_CODE is numeric.
+
+5. The resolved internal branch-code variable must retain its proper internal datatype:
+
+   lv_branch_code qlm_branch.branch_code%TYPE;
+
+6. Inside each wrapper, use the incoming alpha code to look up the internal branch code from QLM_BRANCH.
+
+7. Use lv_branch_code for:
+   - Customer validation
+   - Existing-record lookup
+   - Create/Edit determination
+   - Calling the underlying Edit procedure
+
+8. Check for any remaining references that incorrectly use the incoming alpha branch code as a numeric branch code.
+
+9. Update package specification and body consistently.
+
+10. Do not change the existing underlying Edit procedures.
+
+IMPORTANT — PRESERVE PRIOR MOHAN CHANGES:
+
+Customer Additional Info wrapper:
+- Customer existence validation without active_flag restriction.
+- Existing record -> action E.
+- New record -> action C.
+- Existing record -> fetch existing VERSION.
+- New record -> VERSION 0.
+- Preserve the reduced wrapper input signature and NULL/0 default mappings based on Mohan's annotated parameter list.
+
+Customer Message Address wrapper:
+- Resolve branch code in DB.
+- Derive C/E action in DB when Java passes NULL.
+- Preserve all three Oracle collections.
+- Preserve message-type and XML field mappings.
+
+If any of those previous requirements are not yet implemented, report them separately. Do not silently rewrite unrelated sections.
+
+JAVA COMPATIBILITY:
+
+The Java Customer Message Address caller passes:
+p_alpha_branch_code as a String/VARCHAR
+p_action as NULL
+
+Verify the corresponding wrapper parameter names, types and parameter order.
+
+If the Customer Additional Info Java caller still uses the old numeric branch-code parameter or old parameter list, report the exact Java changes required.
+
+Do not change Java files from this DB repository.
+
+VALIDATION:
+
+- Compare signatures in package spec and body.
+- Verify internal branch-code lookup.
+- Check the underlying Edit procedure argument mappings.
+- Check for SQL datatype mismatches.
+- Ensure no duplicate wrapper procedure was created.
+- Preserve existing formatting; avoid package-wide whitespace changes.
+- Run available SQL/static validation.
+- If DEV Oracle access is authorized, compile package spec and body and inspect USER_OBJECTS and USER_ERRORS.
+- Do not claim Oracle compilation succeeded unless it was actually executed.
+
+OUTPUT:
+
+1. Datatype found before changes for each wrapper.
+2. Exact changes made.
+3. Final datatype of incoming alpha branch parameter.
+4. Final datatype of internal branch-code variable.
+5. Any remaining Java/DB signature mismatch.
+6. Package compilation results or blockers.
+7. Minimal Git diff summary.
+
+Make the necessary code changes.
+
+Do not commit or push automatically.
+
+
+
+
+-------
 p_mxn_customer profile
 
 IN
