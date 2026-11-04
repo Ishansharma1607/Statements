@@ -1,3 +1,48 @@
+Apply Mohan's latest PR review comments to "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql", specifically the "prc_mlv_customer_addl_info" wrapper.
+
+Review comment 1 — Remove unnecessary cursor code
+
+- Remove the helper "prc_close_ref_cursor" and any associated unnecessary code.
+- Preserve required procedure behavior and compilation.
+
+Review comment 2 — Use MAX() in SELECT statements
+
+- Mohan requested removing unnecessary "TOO_MANY_ROWS" handling and using aggregate queries instead.
+- For existing Customer Additional Info version lookup, follow his example:
+
+SELECT MAX(version)
+INTO lv_version
+FROM qlm_customer_addl_info
+WHERE branch_code = lv_branch_code
+  AND customer_code = p_customer_code;
+
+- Handle "NULL" from the aggregate correctly: when no existing record is found, use action "C" and version "0"; otherwise use "E" and the existing version.
+- Apply Mohan's requested aggregate approach to the branch lookup as appropriate, preserving the alpha-branch-to-internal-branch conversion.
+
+Review comment 3 — Hardcode user ID
+
+- In the delegated call to "PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info", always pass:
+
+p_user_id        => 'MLVDATA',
+p_auto_auth_flag => 1,
+
+- Do not use the incoming "p_user_id" or "p_auto_auth_flag" for this delegated call.
+- Keep the public wrapper signature unchanged unless absolutely required.
+
+Important constraints
+
+- Preserve the approved 155 IN + 2 OUT wrapper parameters and their exact order.
+- Preserve existing NULL/default mappings for removed fields, including the NOT NULL fixes.
+- Do not modify the underlying "PKG_CUSTOMER_ADDL_INFO_MGMT" package.
+- Avoid unrelated whitespace changes, formatting changes, or modifications to the Customer Message Address wrapper.
+- Check for compilation errors and verify package specification/body consistency.
+- Show the exact diff and validation results. Do not claim DEV compilation unless it was actually performed.
+
+
+
+_-&_-_&-_&-_&-_&-&
+
+
 We have a new DEV testing issue in the Customer Additional Info wrapper.
 
 Error reported by Mohan:
