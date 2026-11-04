@@ -1,3 +1,32 @@
+Investigate the DEV failure in "PKG_QLM_INCOMING_STATIC_MSG.prc_mlv_customer_addl_info".
+
+Mohan reported:
+
+Java input:
+"p_branch_code=IE6"
+
+Procedure output:
+"p_success_flag=N"
+"p_error_message=S02~Alpha Branch Code does not exist"
+
+The error does not include the incoming alpha branch code even though Java logs show IE6.
+
+Please inspect the SQL package specification, body, and existing Java stored-procedure caller if available.
+
+1. Verify that the incoming "p_branch_code" is character-based and correctly bound.
+2. Check the parameter order, name, and type against the actual deployed DB signature.
+3. Inspect the "QLM_BRANCH" lookup using "alpha_branch_code".
+4. Check why the branch code is missing from the returned error message.
+5. Determine whether this is an actual missing/inactive branch or a parameter-binding issue.
+6. Check whether the underlying "PKG_CUSTOMER_ADDL_INFO_MGMT" package is INVALID, if database access is available.
+7. Do not change business logic without identifying the cause.
+8. Do not commit automatically.
+
+Report the exact cause, evidence, and minimal fix. Clearly distinguish confirmed findings from suspected causes.
+
+
+
+
 Hi Mohan, I verified the alpha branch-code datatype in both wrappers. Both are already using qlm_branch.alpha_branch_code%TYPE, which is VARCHAR2(3), and the internal branch code uses the numeric datatype.
 
 The package spec and body are consistent. DEV compilation is still pending. I'll verify that and update you.
