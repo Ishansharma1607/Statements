@@ -1,3 +1,207 @@
+Task: Investigate and fix all three Oracle runtime errors in Customer Additional Info MLV wrapper
+
+Work in the current QFXLM DB repository.
+
+Primary file: "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+Wrapper: "prc_mlv_customer_addl_info"
+
+Underlying procedure: "PKG_CUSTOMER_ADDL_INFO_MGMT.prc_edit_customer_addl_info"
+
+Background
+
+We recently implemented Mohan's review changes to the Customer Additional Info MLV wrapper.
+
+The wrapper currently has 155 IN parameters and 2 OUT parameters.
+
+The package was previously reported to compile successfully in Oracle DEV, but subsequent testing produced errors in "QLM_LOG_ERROR_MESSAGE".
+
+The three observed errors are:
+
+1. "ORA-01400: cannot insert NULL into QLM_CUSTOMER_ADDL_INFO_Q.MM_DISABLE_OBC_TA_RCV_FLAG"
+2. "ORA-06531: Reference to uninitialized collection" in "PKG_CUSTOMER_ADDL_INFO_MGMT.PRC_EDIT_CUST_PRODUCT_MAPPING"
+3. "ORA-01403: no data found" in "PKG_CUSTOMER_ADDL_INFO_MGMT.PRC_AUTH_CUSTOMER_ADDL_INFO"
+
+The "ORA-01400" error was already addressed in an earlier iteration by supplying schema-appropriate values for mandatory columns, but verify whether that fix is actually present in the latest source and deployed DEV package.
+
+Important: Some database log entries may be historical. Do not assume all three errors are still occurring.
+
+Step 1: Examine the current implementation
+
+Inspect:
+
+- "PKG_QLM_INCOMING_STATIC_MSG.sql" package specification and body.
+- "prc_mlv_customer_addl_info".
+- The entire delegated call to "prc_edit_customer_addl_info".
+- "PKG_CUSTOMER_ADDL_INFO_MGMT.sql", including its edit, authorization, and product-mapping procedures.
+- "QLM_CUSTOMER_ADDL_INFO_Q" and related DDL.
+- Relevant collection TYPE declarations.
+- Existing recent modifications and Git diff.
+
+Do not overwrite completed review corrections.
+
+Verify that:
+
+- The wrapper retains exactly 155 IN and 2 OUT parameters, with the correct names, order, and types.
+- Incoming alpha branch is character-based.
+- Numeric "branch_code" is resolved through "QLM_BRANCH".
+- Customer existence validation does not unnecessarily restrict "active_flag".
+- Existing Customer Additional Info records use action "E" and their existing version.
+- New records use action "C" and version "0".
+- The delegated edit call always uses "p_user_id = 'MLVDATA'".
+- The delegated edit call always uses "p_auto_auth_flag = 1".
+- Removed fields remain excluded from the public wrapper signature.
+- Existing Customer Message Address changes are preserved.
+
+Step 2: Fix ORA-01400
+
+Investigate the mapping for:
+
+"MM_DISABLE_OBC_TA_RCV_FLAG"
+
+Confirm whether the wrapper currently passes "NULL", "0", or another value to the corresponding underlying procedure parameter.
+
+Check the actual column DDL, nullable status, datatype, and default.
+
+Also inspect other removed wrapper fields whose corresponding underlying table columns are "NOT NULL".
+
+Apply these rules:
+
+- Use the actual schema-defined default where appropriate.
+- Use "0" for numeric flags only when supported by the schema and business rules.
+- Use "1" when the actual column definition requires it.
+- Preserve "NULL" for genuinely nullable optional fields.
+- Do not assume an Oracle column default is applied when the insert explicitly supplies "NULL".
+- Do not change the underlying stored procedure signature unnecessarily.
+
+Prevent other predictable "ORA-01400" failures without inventing business values.
+
+Step 3: Fix ORA-06531
+
+Investigate:
+
+"PKG_CUSTOMER_ADDL_INFO_MGMT.PRC_EDIT_CUST_PRODUCT_MAPPING"
+
+Determine which collection is uninitialized.
+
+Trace the complete path:
+
+MLV wrapper → Edit Customer Additional Info → Product Mapping procedure.
+
+The wrapper currently passes "NULL" for removed fields, potentially including product-mapping collection inputs.
+
+Check the actual Oracle collection TYPE, its constructor, and the handling of empty collections.
+
+Determine whether the underlying procedure expects:
+
+- An initialized empty collection.
+- A collection with valid elements.
+- Or an explicit no-product-mapping path.
+
+Fix the specific cause safely.
+
+Do not fabricate product records or add dummy collection elements merely to bypass the exception.
+
+Do not modify the shared underlying procedure unless necessary. If modifications are necessary, explain the impact on other callers first.
+
+Step 4: Fix ORA-01403
+
+Investigate:
+
+"PKG_CUSTOMER_ADDL_INFO_MGMT.PRC_AUTH_CUSTOMER_ADDL_INFO"
+
+Trace the authorization process invoked by:
+
+"prc_edit_customer_addl_info"
+
+Check:
+
+- Whether the edit/create operation successfully creates the expected queue record before authorization.
+- Whether the correct branch code and customer code are passed.
+- Whether "E" versus "C" is correctly determined.
+- Whether the version matches the record being authorized.
+- Whether authorization requires additional identifiers or record states.
+- Whether the failure is a consequence of an earlier insert or product-mapping failure.
+
+Fix the actual cause.
+
+Do not simply suppress "NO_DATA_FOUND", disable auto-authorization, or force success.
+
+If the expected record genuinely does not exist, preserve a meaningful error.
+
+Step 5: Verify recent Mohan review comments
+
+Ensure these remain satisfied:
+
+- No unnecessary "prc_close_ref_cursor" helper.
+- Use "MAX(version)" where applicable for version lookup, as Mohan instructed, with appropriate existence handling.
+- Avoid unnecessary "TOO_MANY_ROWS" exception blocks where aggregate queries are used.
+- Preserve correct branch lookup behavior.
+- Keep the underlying edit procedure's required parameter positions and mappings correct.
+- Preserve the 155 IN + 2 OUT public contract.
+- Avoid formatting changes that create hundreds of unrelated Git diff lines.
+
+Do not unintentionally modify the separate Customer Message Address wrapper.
+
+Step 6: Verify with actual Oracle errors
+
+Review logs using:
+
+SELECT created_dt, program_name, error_code
+FROM qlm_log_error_message
+WHERE program_name LIKE 'PKG_CUSTOMER_ADDL_INFO_MGMT%'
+ORDER BY created_dt DESC
+FETCH FIRST 20 ROWS ONLY;
+
+Compare timestamps with the latest deployment and test execution.
+
+Inspect additional error-message and stack columns if available.
+
+Determine which errors remain reproducible.
+
+Check package validity and compilation errors.
+
+Do not claim errors are resolved merely because the package compiles successfully.
+
+Step 7: Validate changes
+
+Perform all available checks:
+
+1. Package specification and body signature consistency.
+2. Static SQL checks.
+3. Oracle compilation against authorized DEV, if available.
+4. "USER_OBJECTS" / "USER_ERRORS" verification.
+5. A fresh Customer Additional Info create scenario.
+6. An existing-record edit scenario.
+7. Verification of target main and queue table outcomes.
+8. Fresh error-log inspection after execution.
+9. "git diff --check".
+
+If Oracle DEV access is unavailable, explain exactly what remains unverified. Do not claim successful compilation or execution.
+
+Step 8: Deliver results
+
+Make the minimal required code changes in the DB repository.
+
+Return:
+
+- Root cause of each Oracle error.
+- Whether it is historical or currently reproducible.
+- Exact procedure and mappings changed.
+- Explanation of changes.
+- Tests and compilation results.
+- Any unresolved dependencies.
+- Final Git diff summary.
+
+Do not commit or push automatically.
+
+Do not change the 155 IN + 2 OUT wrapper contract or unrelated Java files.
+
+Prioritize a safe, reviewable fix compatible with Mohan's latest instructions.
+
+
+
+-----
 Apply Mohan's latest PR review comments to "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql", specifically the "prc_mlv_customer_addl_info" wrapper.
 
 Review comment 1 — Remove unnecessary cursor code
