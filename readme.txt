@@ -1,3 +1,8 @@
+Hi Mohan, I've completed the Customer Message Address DEV integration testing using the sample XML through MLVProcessor. Both staging and the Customer Message Address SP executed successfully. The Oracle success flag returned Y, and I verified the business, address and all three message-mapping records in DEV. The Java unit tests and full module tests are also passing. I'll finalize the separate DB branch and Java test changes for PR review.
+
+
+
+₹₹-₹-₹-_-₹-_--_-_-_
 The Customer Message Address MLV flow harness unit test passed, but the DEV integration test was skipped.
 
 Please proceed with the following:
