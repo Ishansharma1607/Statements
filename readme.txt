@@ -1,3 +1,23 @@
+SELECT *
+FROM QLM_OWNER.QLM_CUSTOMER_MSG_ADDR
+WHERE CUSTOMER_CODE = '715604'
+  AND BRANCH_CODE = 20070;
+
+
+SELECT OWNER, TABLE_NAME
+FROM ALL_TABLES
+WHERE TABLE_NAME LIKE '%CUST%MSG%ADDR%'
+   OR TABLE_NAME LIKE '%CUSTOMER%MSG%ADDR%'
+ORDER BY OWNER, TABLE_NAME;
+
+SELECT OWNER, TABLE_NAME, COLUMN_NAME, DATA_TYPE
+FROM ALL_TAB_COLUMNS
+WHERE TABLE_NAME LIKE '%CUST%MSG%ADDR%'
+   OR TABLE_NAME LIKE '%CUSTOMER%MSG%ADDR%'
+ORDER BY OWNER, TABLE_NAME, COLUMN_ID;
+
+
+
 Hi Mohan, I've completed the Customer Message Address DEV integration testing using the sample XML through MLVProcessor. Both staging and the Customer Message Address SP executed successfully. The Oracle success flag returned Y, and I verified the business, address and all three message-mapping records in DEV. The Java unit tests and full module tests are also passing. I'll finalize the separate DB branch and Java test changes for PR review.
 
 
