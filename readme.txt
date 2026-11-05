@@ -1,3 +1,21 @@
+The Customer Message Address MLV flow harness unit test passed, but the DEV integration test was skipped.
+
+Please proceed with the following:
+
+1. Inspect the DEV integration test implementation and confirm it actually invokes the real "MLVProcessor → MLVService → MlvCustomerMessageAddressProcedure → Oracle wrapper" path, with no mocked DB components.
+2. Check the required DEV configuration and database connectivity using the repository's existing approved configuration. Do not expose credentials.
+3. Verify whether the Customer Message Address DB wrapper is deployed and VALID in DEV.
+4. Inspect the pre-existing compilation problem in "MlvCustomerMessageAddressProcedureTest.java". Explain the root cause and propose a minimal fix without overwriting uncommitted work.
+5. Do not exclude failing tests to report a successful complete build.
+6. If an authorized DEV connection is available, execute the integration test using the existing committed XML fixture and validate Oracle OUT parameters and expected database effects.
+7. Report actual results, including errors, logs, and whether database records were created or updated.
+8. Do not modify production Java logic, commit, push, or execute against production.
+
+If DEV connectivity or authorization is missing, clearly identify the blocker rather than claiming integration success.
+
+
+
+_-_+_+__-+_+_-+_+_-
 Implement a temporary, developer-only test harness for the Customer Message Address MLV processing flow in the "qfxlmqfxstatic" Java repository, as requested by Mohan.
 
 Objective: Test the complete processing flow without depending on the MQ listener receiving a real message.
