@@ -1,3 +1,59 @@
+We need to split the current DB pull request according to
+Mohan's latest review instructions.
+
+Repository: qfxlm-db
+File: Packages/PKG_QLM_INCOMING_STATIC_MSG.sql
+
+The current PR contains changes for two different MLV
+wrapper procedures:
+1. prc_mlv_customer_addl_info
+2. prc_mlv_customer_msg_addr
+
+REQUIREMENTS:
+
+1. Keep ONLY the Customer Additional Info wrapper changes
+   in the current PR.
+
+2. Remove the Customer Message Address wrapper changes
+   from this PR's diff, preserving them separately for
+   a future PR.
+
+3. Do not permanently discard Customer Message Address
+   work. First preserve it in a separate branch or
+   recoverable commit.
+
+4. Carefully inspect the package specification AND body.
+   Make sure all Customer Additional Info changes remain
+   intact, including:
+   - Alpha branch resolution
+   - Customer validation
+   - Create/Edit action determination
+   - Existing version handling
+   - Required 155 IN parameters and 2 OUT parameters
+   - Correct NULL/default mappings
+   - Recent Mohan review corrections
+
+5. Preserve all pre-existing staging procedures and
+   unrelated package functionality.
+
+6. Do not introduce unnecessary formatting or whitespace
+   changes.
+
+7. Check that package specification and body remain
+   consistent after separating the changes.
+
+8. Run available validation and show the final git diff.
+
+9. Report which changes remain in the current PR and
+   which changes were preserved for the separate PR.
+
+10. Do not automatically commit or push. Let me review
+    the changes first.
+
+
+
+_-_-_-_-_-_-_--_-_-_-_-_-_
+
 Task: Investigate and fix all three Oracle runtime errors in Customer Additional Info MLV wrapper
 
 Work in the current QFXLM DB repository.
