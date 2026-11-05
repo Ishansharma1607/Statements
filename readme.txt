@@ -1,3 +1,441 @@
+C166472-43178 — Implement All Mohan Review Corrections and Retest DEV
+
+You are continuing the Citi QFXLM Customer Message Address implementation.
+
+IMPORTANT: A previous Copilot session has already been instructed to synchronize the Customer Message Address DB feature branch with the latest "origin/main", which now contains the merged Customer Additional Info wrapper.
+
+Before modifying anything, inspect the result of that completed synchronization. Do not repeat a successful merge/rebase, overwrite work, or reset any uncommitted changes.
+
+Mohan has now reviewed the actual DEV database records from our successful Customer Message Address integration test and identified several corrections.
+
+Your task is to implement those corrections in the appropriate Java/DB repositories, validate them, deploy safely to authorized Oracle DEV, and rerun integration testing.
+
+Do not stop after ordinary, fixable technical errors.
+
+Repository and environment
+
+Database repository: "166472.qfxlm3.qfxlm-db"
+
+Existing local feature branch:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+SQL file:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+Wrapper:
+
+"prc_mlv_customer_msg_addr"
+
+Underlying procedure:
+
+"PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr"
+
+Java repository: "180228.qfxlm.qfxlm-qfxstatic"
+
+Java feature branch:
+
+"feature/C166472-42566-customer-message-address-staging"
+
+Relevant classes:
+
+- "MLVProcessor.java"
+- "MLVService.java"
+- "MlvCustomerMessageAddressProcedure.java"
+- "CustomerMessageAddressMlvFlowHarnessTest.java"
+- Relevant existing unit tests
+
+Oracle DEV: "QLMNY2D", schema "QLM_OWNER"
+
+You have authorization to perform necessary development, compilation, safe DEV deployment, and testing using the approved connection.
+
+Do not modify SIT, UAT or production.
+
+1. First inspect the completed branch synchronization
+
+Check the current Git status of both repositories and worktrees.
+
+Verify:
+
+- The Customer Additional Info wrapper merged into "main" is preserved.
+- The Customer Message Address wrapper is present in the existing local feature branch.
+- No existing staging or unrelated procedure was removed.
+- The current branch contains the latest merged main changes.
+- No uncommitted work was lost or overwritten.
+
+If synchronization is still incomplete, finish it safely after preserving local modifications.
+
+The final DB PR must show only Customer Message Address-specific changes relative to updated "origin/main".
+
+Do not recreate either feature branch.
+
+2. Correct user ID and auto-authorization
+
+Mohan reviewed the following existing delegated call in "prc_mlv_customer_msg_addr":
+
+PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr
+(
+    p_user_id        => p_user_id,
+    p_auto_auth_flag => p_auto_auth_flag,
+    ...
+);
+
+He requested that MLV processing always use:
+
+p_user_id        => 'MLVDATA',
+p_auto_auth_flag => 1,
+
+First inspect the Customer Additional Info wrapper already merged into "main" and verify its implementation.
+
+Then apply the same approved convention to the Customer Message Address delegated call.
+
+Preserve the public wrapper signature and existing Java JDBC contract unless a verified incompatibility requires a change.
+
+Do not replace maker/checker values directly with invented values.
+
+3. Correct Customer Message Address version handling
+
+Mohan identified the following mapping in our SQL:
+
+p_version => p_version,
+
+This must be investigated and corrected.
+
+The wrapper already contains logic deriving the action and version for Customer Message Address.
+
+Mohan wants the version passed to the underlying procedure to be the version derived for the correct existing business record.
+
+Investigate the current "lv_action" and "lv_version" declarations and SQL lookup.
+
+Check the actual Customer Message Address business key from the schema and management package.
+
+Mohan specifically mentioned:
+
+- Branch code
+- Modules
+- Customer code
+- Media
+- Location
+
+Verify whether these fields, additional fields, or status/version conditions form the actual lookup key.
+
+For an existing record:
+
+- Determine action "E".
+- Find the correct matching record.
+- Derive its actual existing version.
+- Pass the derived version to the underlying procedure.
+- Do not use an unrelated customer's version.
+- Do not use an arbitrary constant or incoming default.
+
+For a new record:
+
+- Determine action "C".
+- Use the initial version required by the underlying procedure.
+- Confirm the initial version behavior against the Customer Additional Info pattern and the actual management package.
+
+The delegated call should use the correctly derived local version variable, such as:
+
+p_version => lv_version,
+
+But confirm the variable's meaning, datatype, and derivation before changing it.
+
+Do not blindly use "MAX(version)" across all records for a customer.
+
+Handle no matching record and multiple historical versions correctly.
+
+Verify optimistic-version and authorization behavior, including whether authorization increments the persisted version.
+
+4. Correct message-type mapping using the Jira Excel
+
+Mohan observed incorrect message-type values in the DEV child table.
+
+Affected table:
+
+"QLM_OWNER.QLM_CUST_MSG_ADDR_TYPES"
+
+Observed test sequence:
+
+"7373195"
+
+Observed test customer:
+
+"715604"
+
+Observed branch:
+
+"IE6", internal branch "20070"
+
+Our current integration test inserted these message types unchanged from XML:
+
+- "FX_AMENDMENT"
+- "FX_CONFIRMN"
+- "FX_REVERSAL"
+
+However, older database records show abbreviated codes:
+
+- "FX_AMND"
+- "FX_CONF"
+- "FX_REVL"
+
+Mohan said the exact mappings are specified in the Jira Excel attachment:
+
+"QFXLM_QFX_mapping_message_address_Ver2.xlsx"
+
+Inspect the actual workbook, especially the "MSG_TYPE" sheet.
+
+Do not rely on the screenshots as a substitute for the full specification.
+
+Implement all relevant documented XML-to-database message-type mappings, including applicable FX, MM, and other supported values.
+
+Verify the observed examples against the workbook.
+
+Trace the complete mapping:
+
+XML → POJO → MLVProcessor → MLVService → MlvCustomerMessageAddressProcedure → Oracle collection "TAB_CUST_MSG_ADDR_TYPES" → DB child table.
+
+Prefer applying the conversion in the Java XML-to-DB mapping layer if that is the correct architectural location.
+
+Avoid unnecessary hardcoding or changes to the underlying shared management package.
+
+Use a clear, testable mapping implementation.
+
+Handle missing or unsupported message types according to the approved mapping contract. Do not silently pass incorrect raw values or invent abbreviations.
+
+Add parameterized unit tests covering all mappings from the workbook.
+
+Verify that the actual Oracle child table stores the expected abbreviated codes, not the raw XML strings.
+
+5. Investigate maker/checker IDs
+
+Mohan observed unexpected maker and checker values in the test records.
+
+The rows for sequence "7373195" show:
+
+"MAKER_ID = XX12345"
+
+"CHECKER_ID = XX12345"
+
+The screenshot also shows historical rows for other sequences with "MAKER_ID = SYSTEM" and "CHECKER_ID = SYSTEM".
+
+Investigate exactly how "XX12345" was populated.
+
+Trace:
+
+- The Java wrapper input user ID.
+- Public wrapper "p_user_id".
+- Delegated management procedure "p_user_id".
+- Automatic authorization.
+- Maker/checker field assignment in the underlying package.
+- Related procedures and database triggers.
+- Existing customer master data or caller context, if relevant.
+
+Determine whether "XX12345" came from the XML, the Java caller, a database default, the management package, an earlier data value, or another source.
+
+Changing the delegated user ID to "MLVDATA" may resolve it, but do not assume this without verifying the actual audit logic.
+
+Confirm what values should be persisted for MLV processing according to the approved business rules.
+
+Do not directly UPDATE maker/checker columns merely to make test data appear correct.
+
+6. Verify parent-child sequence relationships
+
+Use the actual observed DEV schema.
+
+Parent table:
+
+"QLM_CUSTOMER_MSG_ADDR"
+
+Child tables/views:
+
+- "QLM_CUST_MSG_ADDR_TYPES"
+- "QLM_CUST_MSG_ADDR_PII"
+- "QLM_CUST_EMAIL_ADDR_PII_VIEW"
+
+Mohan explained that the parent sequence number is carried forward into the child records.
+
+Inspect records associated with:
+
+- Customer "715604"
+- Branch "20070"
+- Sequence "7373195"
+
+Verify:
+
+- Parent sequence number.
+- Child foreign-key/sequence relationships.
+- Child message-type values.
+- Parent and child versions.
+- Maker/checker IDs.
+- Active flags.
+- PII address data.
+- Email records, when supplied by XML.
+
+Do not assume all child tables must have rows if the sample XML provides no corresponding values.
+
+Compare stored values against the Excel and XML fixture.
+
+7. Apply the corrections in the correct repositories
+
+Decide whether each correction belongs to Java or SQL based on the actual data flow.
+
+Likely responsibilities:
+
+DB wrapper
+
+- MLV user ID convention.
+- Auto-authorization flag.
+- Create/edit lookup and derived version.
+
+Java
+
+- XML message-type translation to database codes.
+- Focused mapping unit tests.
+
+However, verify the actual architecture rather than automatically assigning every issue to those layers.
+
+Preserve the currently successful staging-before-business flow.
+
+Do not change unrelated Customer Additional Info code.
+
+Keep package specification and body signatures consistent.
+
+Do not change production Java simply to satisfy an obsolete test assertion.
+
+8. Compile and safely deploy to Oracle DEV
+
+The wrapper was previously deployed to DEV and successfully executed.
+
+Before deploying updated SQL:
+
+1. Read and preserve the current deployed package definition.
+2. Compare with the final feature-branch implementation.
+3. Preserve existing procedures, including "PRC_MLV_CONF_PARTY_BIC".
+4. Preserve the Customer Additional Info changes already merged into main.
+5. Apply only the required changes.
+6. Compile specification and body.
+7. Verify both are VALID.
+8. Verify the underlying management package remains VALID.
+9. Check "ALL_ERRORS" / "USER_ERRORS".
+10. Verify the correct wrapper definition is deployed.
+
+Resolve straightforward compilation issues independently.
+
+Never overwrite the deployed package with an older complete Git version.
+
+Ensure the final Git source corresponds to the corrected deployed implementation.
+
+9. Retest with another DEV customer
+
+Mohan explicitly requested another Customer Message Address DEV test after these corrections.
+
+Previously tested customer:
+
+"715604"
+
+Find a different, existing, authorized synthetic DEV customer with valid branch/customer reference data.
+
+Do not use a real customer or fabricate arbitrary customer master records.
+
+Prefer a customer with no existing Customer Message Address business record for the create-path test.
+
+For the edit-path test, use only a designated test-owned record and the proper version.
+
+Do not alter the committed sample XML.
+
+Use an in-memory copy or test-specific fixture to substitute the approved DEV customer code.
+
+Run the actual flow:
+
+Sample XML → MLVProcessor → XML parsing → staging DAO → MLVService → Java procedure wrapper → Oracle MLV wrapper → underlying Customer Message Address procedure.
+
+Only the MQ message input should be simulated.
+
+Do not mock the Oracle procedures in the actual integration test.
+
+Check:
+
+- Correct message-type translation.
+- Correct action determination.
+- Correct version passed for create/edit.
+- Correct stored version after authorization.
+- Correct user ID and maker/checker behavior.
+- Successful staging.
+- "p_success_flag = 'Y'".
+- Empty/null error message.
+- Correct parent and child records.
+- Correct sequence relationships.
+- No unexpected duplicates.
+- No new relevant Oracle errors.
+
+Where feasible, perform both create and edit tests using approved DEV test-owned records.
+
+Ensure repeated testing does not unintentionally update other users' data.
+
+10. Rerun Java tests
+
+Run:
+
+- Message-type mapping unit tests.
+- Customer Message Address procedure unit tests.
+- XML flow harness unit test.
+- Actual Oracle DEV integration test.
+- Full relevant JUnit suite.
+- Full relevant TestNG suite.
+- Java compilation.
+- "git diff --check" in both repositories.
+
+Do not exclude failing tests to produce a false PASS.
+
+The normal unit suite should not require Oracle connectivity.
+
+DEV integration must remain explicitly opt-in.
+
+11. Final report
+
+Provide a concise but complete evidence-based report.
+
+Review corrections
+
+1. Exact XML-to-DB message-type mappings implemented.
+2. Before/after version derivation and delegated argument.
+3. Correct user ID and auto-authorization mappings.
+4. Root cause of "XX12345" maker/checker values.
+5. Correct intended audit values and actual observed results.
+
+DEV validation
+
+6. New test customer used.
+7. Branch and business key.
+8. Parent sequence number.
+9. Parent and child row counts.
+10. Actual stored message-type codes.
+11. Versions before/after.
+12. Maker/checker values.
+13. Oracle OUT parameter results.
+14. Package compilation and validity.
+15. New relevant error-log results.
+
+Git/PR readiness
+
+16. Updated DB feature branch status.
+17. Confirm merged main changes were preserved.
+18. Exact Java and DB diff summary.
+19. All relevant test outcomes.
+20. Whether the code is ready for Mohan's PR review.
+
+You are authorized to perform routine DEV compilation, deployment and integration testing.
+
+Resolve small technical blockers autonomously.
+
+Do not commit, push, merge, create PRs, or modify SIT/UAT/production automatically.
+
+Final objective: Address all observations raised by Mohan, demonstrate correct business data in Oracle DEV, and prepare both Java and DB changes for review.
+
+
+₹-₹-&-_&-₹&-
+
 SELECT *
 FROM QLM_OWNER.QLM_CUSTOMER_MSG_ADDR
 WHERE CUSTOMER_CODE = '715604'
