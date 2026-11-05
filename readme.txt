@@ -1,4 +1,49 @@
+Implement a temporary, developer-only test harness for the Customer Message Address MLV processing flow in the "qfxlmqfxstatic" Java repository, as requested by Mohan.
 
+Objective: Test the complete processing flow without depending on the MQ listener receiving a real message.
+
+1. Inspect "MLVStaticReceiver.java", "MLVProcessor.java", and "MLVService.java". Determine exactly how the receiver initializes the processor and passes the incoming XML string.
+
+2. Locate the already committed "customerMessageAddress.xml" sample fixture. Read its full contents and use that exact XML for this test. Do not create a simplified or fabricated XML.
+
+3. Create a temporary JUnit test or dedicated local test runner that:
+   
+   - Loads the XML into a String.
+   - Initializes "MLVProcessor" using the same mechanism as "MLVStaticReceiver".
+   - Supplies the XML string as though it came from the MQ listener.
+   - Invokes the actual processor entry point.
+   - Exercises XML parsing, Customer Message Address detection, staging, and service delegation.
+
+4. Do not call the stored procedure directly from the test. The test must enter through "MLVProcessor" and verify the intended flow.
+
+5. Check the "mlv.staging.enabled" configuration and ensure the enabled path stages successfully before invoking Customer Message Address business processing.
+
+6. Provide two test levels:
+   
+   - Unit test with mocked database dependencies to verify parsing, staging order, and procedure invocation.
+   - DEV integration test using the actual database procedure, only when an authorized DEV connection is available.
+
+7. For the integration test, verify that:
+   
+   - XML parsing succeeds.
+   - The staging procedure succeeds.
+   - "MLVService" invokes the Customer Message Address procedure exactly once.
+   - Oracle OUT parameters are checked.
+   - The expected database records are created or updated.
+
+8. Keep production code unchanged wherever possible. If temporary hardcoding is necessary, isolate it in a test-only class and do not commit it into production processing logic.
+
+9. Do not trigger the live MQ listener or modify production database data.
+
+10. Run the applicable tests and report actual outcomes. Do not claim Oracle stored procedure execution succeeded if the test only used mocks.
+
+Show the exact test class created, how to run it, and the observed results. Do not commit or push automatically.
+
+
+
+
+
+_-_-_-_--_&-
 You are working in the Citi QFXLM Oracle database repository.
 
 Task: Safely split the existing mixed database PR into two independent PRs and CREATE a new Git feature branch for Customer Message Address.
