@@ -1,0 +1,281 @@
+C166472-43178 — Synchronize with merged main and finalize Customer Message Address PR
+
+The Customer Message Address Java-to-Oracle DEV integration test has now passed.
+
+We need to finalize the Git changes and prepare the separate Customer Message Address database pull request.
+
+Important new information:
+
+Mohan has already MERGED our earlier Customer Additional Info DB pull request into the "main" branch.
+
+Therefore, the latest "origin/main" should now contain the Customer Additional Info wrapper and potentially other updated package procedures.
+
+Our Customer Message Address implementation was developed in a separate local feature branch BEFORE that merge.
+
+We must synchronize the feature branch with the latest main while preserving ALL newly merged changes.
+
+1. Locate the correct DB branch
+
+Database repository:
+
+"166472.qfxlm3.qfxlm-db"
+
+Existing local branch:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+This branch already exists in a separate Git worktree.
+
+DO NOT create another feature branch.
+
+The current worktree contains uncommitted Customer Message Address SQL changes in:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+The changes include:
+
+- "prc_mlv_customer_msg_addr" in package specification.
+- "prc_mlv_customer_msg_addr" in package body.
+- Customer and alpha branch validation.
+- Create/Edit action handling.
+- Five Oracle collection parameters.
+- Delegation to "PKG_CUST_MSG_ADDR_MGMT.PRC_EDIT_CUST_MSG_ADDR".
+- Success and error parameter handling.
+
+Preserve the complete implementation.
+
+2. Safely synchronize with latest main
+
+First run:
+
+- "git status"
+- "git branch -vv"
+- "git worktree list"
+- "git fetch origin main"
+
+Then inspect the latest "origin/main".
+
+Verify that Mohan's Customer Additional Info PR is actually merged.
+
+Compare:
+
+1. Current "origin/main".
+2. Existing Customer Message Address feature branch HEAD.
+3. Uncommitted Customer Message Address SQL changes.
+4. Successfully deployed Oracle DEV implementation.
+
+Before integration, preserve all uncommitted work using recoverable backups or patches.
+
+Do not overwrite or discard the local Customer Message Address wrapper.
+
+Update the existing Customer Message Address feature branch onto the latest "origin/main" using a safe Git merge or rebase strategy appropriate to its commit history and separate worktree.
+
+If normal Git integration is blocked by uncommitted changes, safely preserve and reapply those changes.
+
+Resolve straightforward merge conflicts independently, but do not silently choose one side for conflicting business logic.
+
+Do not force-push or rewrite shared branches.
+
+3. Carefully reconcile the shared SQL package
+
+This is the MOST IMPORTANT STEP.
+
+File:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+Both Customer Additional Info and Customer Message Address wrappers belong to this package.
+
+The final source must contain:
+
+A. Everything currently present in the latest main branch
+
+Including the newly merged:
+
+"prc_mlv_customer_addl_info"
+
+Preserve its full specification and body implementation, including Mohan's previously approved corrections.
+
+Also preserve:
+
+- Existing XML staging procedures.
+- Existing utility procedures.
+- Existing package history.
+- All unrelated changes merged by other developers.
+- "PRC_MLV_CONF_PARTY_BIC" if present in main.
+- Other existing package functionality.
+
+B. Our Customer Message Address changes
+
+Add or preserve:
+
+"prc_mlv_customer_msg_addr"
+
+Include its specification and body implementation.
+
+Use the exact implementation that successfully passed the Oracle DEV integration test.
+
+Do not replace the entire latest main package file with an older feature-branch copy.
+
+Do not remove, overwrite, or roll back the newly merged Customer Additional Info wrapper.
+
+Do not duplicate any procedure declarations or implementations.
+
+Keep all package parameter types and signatures consistent.
+
+4. Match the successfully tested DEV implementation
+
+The previous agent successfully deployed and tested the Customer Message Address wrapper in Oracle DEV.
+
+Observed successful results:
+
+- "PKG_QLM_INCOMING_STATIC_MSG": VALID.
+- "PKG_CUST_MSG_ADDR_MGMT": VALID.
+- "PRC_MLV_CUSTOMER_MSG_ADDR": deployed.
+- Staging succeeded.
+- Customer Message Address business processing succeeded.
+- Stored procedure returned success flag "Y".
+- Three message mappings were persisted.
+- Expected database records were verified.
+- No duplicate business records were reported.
+
+Compare the final Git implementation with the wrapper that actually succeeded in DEV.
+
+Check:
+
+- Wrapper signature: 33 IN + 2 OUT.
+- Five Oracle collection parameters.
+- JDBC parameter compatibility.
+- Branch and customer validation.
+- Action/version handling.
+- Underlying procedure mapping.
+- Error handling and OUT parameters.
+
+If the deployed DEV implementation contains a necessary fix not present in the local source, update the local feature branch accordingly.
+
+Do not import unrelated DEV-only code changes.
+
+The goal is for the new PR to represent the implementation that was successfully tested.
+
+5. Validate the final DB PR diff
+
+After synchronizing with main, inspect the complete PR diff against the latest "origin/main".
+
+The PR must contain ONLY:
+
+- Customer Message Address wrapper changes.
+- Required supporting changes exclusive to Customer Message Address.
+- Relevant package change-history entries.
+
+The PR must NOT show:
+
+- Customer Additional Info wrapper being removed.
+- Customer Additional Info wrapper being reintroduced as a new change.
+- Existing staging procedures being removed.
+- Unrelated Oracle package changes.
+- Large formatting-only differences.
+- Duplicate wrapper implementations.
+
+Verify that all changes merged into main remain intact.
+
+Run "git diff --check".
+
+Check package specification/body consistency.
+
+Perform safe Oracle validation if necessary, but avoid redeploying code already verified unless there is a real mismatch.
+
+6. Review the Java test changes
+
+Java repository:
+
+"180228.qfxlm.qfxlm-qfxstatic"
+
+Existing Java branch:
+
+"feature/C166472-42566-customer-message-address-staging"
+
+The previous agent restored the incompatible local changes in:
+
+"MlvCustomerMessageAddressProcedureTest.java"
+
+Keep that restored version unless genuinely new changes are necessary.
+
+Review the untracked:
+
+"CustomerMessageAddressMlvFlowHarnessTest.java"
+
+The harness already produced successful results.
+
+Check that it:
+
+- Uses the existing committed sample XML.
+- Can execute its mock-based unit test without Oracle DEV.
+- Runs DEV integration only through explicit opt-in flags.
+- Does not contain usernames, passwords, or secrets.
+- Does not hardcode a customer in a way that breaks future environments.
+- Does not modify production configuration.
+- Does not introduce unintended DB writes during normal CI.
+- Verifies staging before business processing.
+- Checks procedure success and expected database effects.
+
+If the test meets these requirements, retain it for inclusion in the existing Java PR.
+
+If small changes are necessary to make it maintainable and safe, implement them and rerun the relevant tests.
+
+Do not create another Java PR when an appropriate Java PR already exists.
+
+7. Final validation
+
+Run the available Java checks:
+
+- Customer Message Address harness unit test.
+- JUnit module tests.
+- TestNG module tests.
+- Java compilation.
+- Git diff checks.
+
+For Oracle, verify the deployed packages are still VALID and that the Git wrapper matches the tested DEV implementation.
+
+Do not unnecessarily generate additional DEV business records just to repeat an already successful integration test.
+
+If a meaningful implementation change requires another integration execution, use an approved DEV test customer and validate the results.
+
+8. Prepare the new DB PR
+
+The new DB PR should use:
+
+Source branch:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+Target branch:
+
+"main"
+
+Suggested PR title:
+
+"C166472-43178 - Add MLV Customer Message Address Wrapper SP"
+
+Prepare the branch so that its PR diff is minimal, correct, and based on the latest merged main.
+
+Provide a summary containing:
+
+- Newly merged main changes preserved.
+- Customer Message Address changes added.
+- Any merge conflicts resolved.
+- Java test harness status.
+- DB compilation verification.
+- Integration testing evidence.
+- Final Git diff.
+- Proposed commit message.
+- Proposed PR description.
+
+You may complete safe local Git synchronization and necessary source corrections.
+
+Do not commit, push, or create the PR automatically. Show me the final status and diffs for review first.
+
+Final requirement:
+
+The new Customer Message Address DB PR must build on top of the latest merged main without removing or altering Mohan's newly merged Customer Additional Info wrapper.
+
+Preserve the successful DEV-tested implementation while keeping the two Jira changes logically separated.
