@@ -1,0 +1,312 @@
+C166472-43178 — Complete Customer Message Address DEV Integration Testing
+
+You are working on the QFXLM Customer Message Address implementation.
+
+IMPORTANT: I am explicitly authorizing you to perform necessary development, compilation, deployment, debugging, and integration testing in the approved Oracle DEV environment (QLMNY2D), using my existing authorized access.
+
+Do not repeatedly stop and ask me to resolve routine development blockers.
+
+Investigate problems, implement appropriate fixes, compile again, deploy corrected code to DEV, and continue testing until the integration flow succeeds or you encounter a genuinely unsafe or externally dependent blocker.
+
+This permission applies ONLY to approved DEV development/testing. Never modify SIT, UAT, or production.
+
+1. Existing repositories and branch
+
+Database repository: "166472.qfxlm3.qfxlm-db"
+
+The Customer Message Address wrapper already exists in a separate local worktree on:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+Do not create a replacement branch.
+
+The existing uncommitted changes in:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+contain the Customer Message Address wrapper in both package specification and body.
+
+The wrapper has 33 IN parameters, 2 OUT parameters, and five Oracle collection parameters.
+
+Java repository: "180228.qfxlm.qfxlm-qfxstatic"
+
+Java branch:
+
+"feature/C166472-42566-customer-message-address-staging"
+
+Relevant test:
+
+"CustomerMessageAddressMlvFlowHarnessTest.java"
+
+The previous agent already fixed the incompatible local Java test modifications and verified:
+
+- 125 JUnit tests passed.
+- 534 TestNG tests passed.
+- Full Java compilation passed.
+- Mocked Customer Message Address flow test passed.
+
+Do not rework these completed changes unnecessarily.
+
+2. Fix the INVALID Oracle package body
+
+Oracle DEV connection:
+
+- Database: "QLMNY2D"
+- Schema: "QLM_OWNER"
+
+Previously observed:
+
+- "PKG_QLM_INCOMING_STATIC_MSG" specification: VALID
+- "PKG_QLM_INCOMING_STATIC_MSG" body: VALID
+- "PKG_CUST_MSG_ADDR_MGMT" specification: VALID
+- "PKG_CUST_MSG_ADDR_MGMT" body: INVALID
+
+I authorize you to investigate and compile the INVALID package body in DEV.
+
+Actions:
+
+1. Query "ALL_OBJECTS", "ALL_ERRORS", "ALL_DEPENDENCIES", and relevant source.
+2. Identify the exact reason for invalidity.
+3. Attempt an appropriate DEV recompilation, such as:
+
+ALTER PACKAGE QLM_OWNER.PKG_CUST_MSG_ADDR_MGMT
+COMPILE BODY;
+
+4. Recheck package-body status and compilation errors.
+5. If compilation fails, inspect the exact errors and dependencies.
+6. If the cause is a small, clearly understood PL/SQL problem, correct it in the appropriate local source and apply the minimal reviewed-compatible DEV change.
+7. Recompile and verify again.
+8. Continue until the package is VALID or a genuinely external dependency prevents progress.
+
+Do not blindly replace the underlying package with an older repository version.
+
+Preserve the existing interface and all unrelated business behavior.
+
+Do not suppress exceptions, remove validation, or fabricate return values.
+
+If a fix would substantially change shared business logic or affect unrelated callers, stop that specific modification and clearly explain the risk. Continue other independent tasks.
+
+3. Deploy the missing Customer Message Address wrapper
+
+The previous session confirmed:
+
+"PRC_MLV_CUSTOMER_MSG_ADDR"
+
+exists in our local DB branch but is missing from the deployed DEV package.
+
+I authorize you to deploy this wrapper to Oracle DEV using the approved database connection and deployment mechanism.
+
+Critical deployment requirement:
+
+The current DEV "PKG_QLM_INCOMING_STATIC_MSG" package contains existing procedures that may not be present in the local Git version, including:
+
+"PRC_MLV_CONF_PARTY_BIC"
+
+Therefore:
+
+1. Read the currently deployed DEV package specification and body.
+2. Preserve a recoverable snapshot of their current definitions.
+3. Compare the deployed package with our local Customer Message Address branch.
+4. Construct a deployment-safe version preserving all existing DEV functionality.
+5. Add only the required Customer Message Address wrapper declaration and implementation.
+6. Preserve the existing staging procedures.
+7. Do not accidentally introduce or remove Customer Additional Info changes.
+8. Deploy the reconciled package specification and body to DEV.
+9. Compile the package and body.
+10. Resolve any straightforward compilation issues.
+11. Verify both are VALID.
+12. Verify "PRC_MLV_CUSTOMER_MSG_ADDR" exists in "ALL_PROCEDURES".
+
+Do not execute the entire older local SQL package file as a blind replacement.
+
+If a compilation failure is caused by a small type mismatch, missing declaration, incorrect parameter mapping, or straightforward dependency issue, investigate and fix it instead of stopping immediately.
+
+Keep the local feature-branch implementation consistent with any fix needed for deployment. Preserve the PR split.
+
+4. Resolve the missing DEV customer automatically
+
+The existing committed XML fixture contains:
+
+- Alpha branch: "IE6"
+- Internal branch: "20070"
+- Customer: "715484"
+
+Previous investigation confirmed:
+
+- Branch "IE6" exists and is active in DEV.
+- Customer "715484" does not exist in DEV.
+
+I want the actual integration test completed.
+
+Investigate whether a different existing DEV test customer can safely be used.
+
+Actions:
+
+1. Inspect "QLM_CUSTOMER" and related required reference tables.
+2. Find an existing approved synthetic/test customer belonging to branch "IE6".
+3. Verify the customer satisfies the Customer Message Address wrapper's validation rules.
+4. Verify the necessary related reference data exists.
+5. Prefer an approved test customer that can safely receive test message-address mappings.
+6. Check for existing message-address records to determine whether the test should use create or edit behavior.
+7. Avoid selecting a real customer or modifying unrelated customer information.
+
+If no suitable test customer exists for "IE6", investigate whether an approved DEV test customer and branch combination can be used.
+
+Do not modify the original committed "customerMessageAddress.xml".
+
+Instead, create an integration-test-specific copy or construct the test payload in memory, changing only the customer/branch identifiers needed for an authorized test.
+
+Keep all message-address mapping elements, XML structure, and other business fields unchanged.
+
+If customer creation is genuinely required, use an existing approved test-data provisioning mechanism. Do not fabricate arbitrary customer master records.
+
+If no safe customer is available, provide the exact missing prerequisite while completing all other available work.
+
+5. Execute the real Java-to-Oracle integration flow
+
+Once the database package, underlying dependency, and test customer are ready, execute:
+
+"CustomerMessageAddressMlvFlowHarnessTest.java"
+
+Use the actual implementations of:
+
+- "MLVProcessor"
+- "CommonXMLToPojoConverter"
+- "IncomingStaticMessageStagingDao"
+- "MLVService"
+- "MlvCustomerMessageAddressProcedure"
+
+Use actual Oracle DEV connectivity and the deployed stored procedures.
+
+Only the MQ listener/input should be simulated.
+
+Enable the required DEV integration flags and staging configuration.
+
+Do not mock the DAO, service, or stored procedure during the actual integration test.
+
+The required flow is:
+
+Sample XML → MLVProcessor → XML parsing → staging procedure → MLVService → Customer Message Address Java procedure → Oracle wrapper → underlying management procedure.
+
+Verify each stage using actual observed results.
+
+6. Handle testing errors independently
+
+If the integration test fails:
+
+1. Capture the actual Java exception and Oracle error details.
+2. Identify the failing class, method, procedure, SQL statement, or mapping.
+3. Determine whether the problem is in Java, the wrapper, the underlying package, or test data.
+4. Correct small implementation defects in the appropriate local source.
+5. Apply necessary authorized DEV-only updates.
+6. Recompile.
+7. Rerun the failing test.
+8. Verify the result again.
+
+Do not stop after the first ordinary compilation, mapping, configuration, or test-data error.
+
+Examples of issues you should resolve independently where safe:
+
+- Oracle collection type initialization.
+- Incorrect JDBC parameter order or datatypes.
+- Oracle STRUCT/ARRAY parameter mismatches.
+- Invalid or missing package compilation.
+- Wrong XML-to-POJO field mappings.
+- Missing required DEV configuration.
+- Small test-harness defects.
+- Stored procedure success/error OUT parameter handling.
+- Duplicate test records created by previous test attempts.
+
+Do not fix tests by bypassing validation, ignoring failed OUT parameters, or altering business logic without understanding the effect.
+
+Do not delete existing data to make tests pass.
+
+Use narrowly scoped test data and inspect existing state before attempting repeated create operations.
+
+7. Validate actual database changes
+
+After a successful procedure call, verify the expected records in:
+
+- "QLM_INCOMING_STATIC_MSG"
+- "QLM_INCOMING_STATIC_MSG_DTLS"
+- "QLM_CUSTOMER_MSG_ADDR"
+- Relevant customer-message mapping and email tables identified from the real schema.
+
+Confirm:
+
+- The XML was staged.
+- The correct branch and customer were used.
+- All expected message mappings were processed.
+- Customer Message Address data was correctly inserted or updated.
+- Stored procedure OUT parameters indicate success.
+- No unexpected duplicate rows were created.
+- No new relevant Oracle errors were logged.
+- The operation did not modify unrelated customer data.
+
+Capture the before/after results for the specific approved test customer.
+
+Use an authorized test-data cleanup or rollback strategy when appropriate; do not remove records owned by other processes.
+
+8. Final regression testing
+
+After completing integration:
+
+- Run the Customer Message Address harness unit test.
+- Run the actual DEV integration test.
+- Run the relevant JUnit module suite.
+- Run the relevant TestNG suite.
+- Run full Java compilation.
+- Verify Oracle package status and errors again.
+- Inspect the final Java and SQL diffs.
+- Run "git diff --check".
+
+Do not exclude failing tests or silently skip integration checks.
+
+9. Autonomy and permissions
+
+You have my permission to:
+
+- Inspect both repositories and existing Git worktrees.
+- Make necessary local development changes.
+- Use the approved Oracle DEV connection.
+- Recompile Oracle DEV packages.
+- Deploy the necessary Customer Message Address wrapper safely to DEV.
+- Fix small, demonstrable issues in approved DEV code.
+- Execute authorized DEV integration tests.
+- Re-run tests and investigate errors.
+- Select suitable approved synthetic DEV test data.
+
+Do not repeatedly ask for permission for these routine steps.
+
+However:
+
+- Do not touch production, SIT, or UAT.
+- Do not overwrite unrelated shared database procedures.
+- Do not overwrite other developers' commits or work.
+- Do not commit, push, or merge Git branches automatically.
+- Do not make broad destructive database changes.
+- Do not bypass company security or environment permissions.
+- Do not claim success for work that was not actually executed.
+
+10. Final report
+
+I need a clear final report that I can share with Mohan.
+
+Report:
+
+1. Customer Message Address wrapper deployed in DEV: YES/NO
+2. Incoming static package specification/body VALID: YES/NO
+3. Underlying management package specification/body VALID: YES/NO
+4. Approved DEV test customer found and used: YES/NO
+5. XML parsing successful: YES/NO
+6. Staging procedure executed successfully: YES/NO
+7. Customer Message Address business SP executed successfully: YES/NO
+8. Oracle success/error OUT parameter results
+9. Expected database records verified: YES/NO
+10. JUnit and TestNG results
+11. Exact Java/SQL changes made
+12. Any remaining functional issues
+
+If everything succeeds, provide a concise confirmation showing the evidence that the actual Java-to-Oracle DEV flow works.
+
+Priority: Complete the real integration test, not merely package compilation or mocked unit testing. Resolve routine blockers independently and continue working through the flow.
