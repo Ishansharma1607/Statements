@@ -1,0 +1,273 @@
+Task: Complete Customer Message Address DEV integration testing
+
+We need to complete the Customer Message Address XML-to-Oracle integration test requested by Mohan for Jira C166472-43178.
+
+There are two separate Git repositories:
+
+Database repository: "166472.qfxlm3.qfxlm-db"
+
+Existing LOCAL branch containing the Customer Message Address wrapper:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+Java repository: "180228.qfxlm.qfxlm-qfxstatic"
+
+Module: "qfxlmqfxstatic"
+
+Relevant Java classes:
+
+- "MLVStaticReceiver.java"
+- "MLVProcessor.java"
+- "MLVService.java"
+- "MlvCustomerMessageAddressProcedure.java"
+- "CustomerMessageAddressMlvFlowHarnessTest.java"
+- "MlvCustomerMessageAddressProcedureTest.java"
+
+The previous agent created a test harness and successfully ran an isolated mocked unit test.
+
+However, the actual DEV integration test did not execute.
+
+Please investigate and complete the remaining tasks carefully.
+
+STEP 1 — Find the existing DB branch
+
+Open the database repository and locate the exact local branch:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+This branch was already created during our earlier PR split.
+
+Do not create another branch or overwrite the existing one.
+
+Inspect:
+
+- "git status"
+- "git branch -vv"
+- Current branch
+- Local commits
+- Uncommitted changes
+- Package specification and body
+
+Locate:
+
+"Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+Verify that the local branch contains "prc_mlv_customer_msg_addr" in both the package specification and package body.
+
+Verify its complete implementation, parameters, Oracle collections, customer/branch handling, and underlying stored procedure invocation.
+
+Check that the branch preserves the existing staging functionality.
+
+Do not modify the Customer Additional Info branch or its existing PR.
+
+STEP 2 — Compare the DB branch with Oracle DEV
+
+The previous session successfully connected to:
+
+- Oracle DEV database: "QLMNY2D"
+- Database user: "QLM_OWNER"
+- Package: "PKG_QLM_INCOMING_STATIC_MSG"
+
+The deployed package specification and body were VALID, but "PRC_MLV_CUSTOMER_MSG_ADDR" was missing.
+
+The previous agent verified this through "ALL_PROCEDURES" and deployed package source inspection.
+
+Recheck these findings.
+
+Compare:
+
+1. Customer Message Address wrapper in the local feature branch.
+2. Current Oracle DEV package specification.
+3. Current Oracle DEV package body.
+4. Existing staging procedures in DEV.
+5. Any Customer Additional Info changes already deployed in DEV.
+
+Critical: Both Customer Additional Info and Customer Message Address wrappers share the same Oracle package.
+
+Deploying an older complete package file could accidentally remove another team's changes or the Customer Additional Info wrapper.
+
+Do not deploy the feature branch's SQL file blindly.
+
+Determine the exact deployment delta required to introduce Customer Message Address functionality while preserving all existing DEV package procedures.
+
+Check that the required Oracle SQL object types and underlying Customer Message Address management procedures are available and valid.
+
+Prepare a deployment-safe SQL change.
+
+If authorized DEV deployment is explicitly permitted, use the approved deployment procedure after reviewing the package impact. Otherwise, report the required deployment for Mohan's approval before making database changes.
+
+Never deploy to SIT, UAT, or production.
+
+STEP 3 — Investigate the Java test compilation problem
+
+Switch to the Java repository without disturbing the DB repository.
+
+The previous agent reported an uncommitted modification in:
+
+"MlvCustomerMessageAddressProcedureTest.java"
+
+This test calls a missing method:
+
+"commonEntryFlag(...)"
+
+It also contains expectations involving formatName, counterparty, email media behavior, branch lookup, and message flags.
+
+The current production class apparently exposes methods including:
+
+- "messageAddressTypeRows(...)"
+- "messageTypeCategoryFlag(...)"
+- "flagOrDatabaseDefault(...)"
+
+We need to determine whether the test modifications are required, outdated, accidentally generated, or already part of "main".
+
+Do the following:
+
+1. Inspect the working-tree changes and current branch.
+2. Fetch the latest remote "main" using "git fetch origin main".
+3. Compare the test file from "origin/main", current branch HEAD, and the working tree.
+4. Inspect relevant recent commits and file history.
+5. Determine which changes came from main, which are already committed on the feature branch, and which exist only locally.
+6. Check whether the current production Java implementation actually supports those test expectations.
+7. Determine whether these tests belong to the current Customer Message Address requirements.
+
+Do not run "git pull" or merge main into the working branch simply to perform this comparison.
+
+Rollback instructions
+
+If the uncommitted test modifications are unrelated, obsolete, or incompatible with the current approved implementation:
+
+- Preserve the exact uncommitted diff in a recoverable backup.
+- Restore ONLY "MlvCustomerMessageAddressProcedureTest.java" to its appropriate committed version.
+- Do not revert other test files.
+- Do not modify production code merely to satisfy outdated assertions.
+- Explain exactly which uncommitted changes were removed and why.
+
+If any changes are legitimate and required, retain and correct them against the real production contract instead of discarding them.
+
+Do not use "git reset --hard", "git clean", force-push, or destructive repository-wide operations.
+
+STEP 4 — Verify the existing MLV integration harness
+
+Inspect:
+
+"CustomerMessageAddressMlvFlowHarnessTest.java"
+
+Verify that its real integration-test path uses:
+
+- Actual "MLVProcessor"
+- Actual XML converter
+- Actual "IncomingStaticMessageStagingDao"
+- Actual "MLVService"
+- Actual "MlvCustomerMessageAddressProcedure"
+- Actual Oracle DEV stored procedure
+
+Use the existing committed:
+
+"customerMessageAddress.xml"
+
+Do not create artificial XML or call the database wrapper directly as a substitute for this integration test.
+
+The test must simulate the MQ message while bypassing the real MQ connection.
+
+Use a synchronous executor if appropriate to reproduce the receiver's execution semantics.
+
+Ensure that "mlv.staging.enabled=true" for this integration scenario.
+
+Verify staging completes successfully before business processing.
+
+Inspect the staging result and procedure OUT parameters; do not rely solely on Java method completion.
+
+STEP 5 — Execute actual DEV integration testing
+
+Once the DB wrapper is deployed and verified, run the integration test against authorized Oracle DEV.
+
+Use the existing approved database connection configuration.
+
+Do not print credentials or place secrets in source files.
+
+The expected flow is:
+
+Sample Customer Message Address XML
+→ MLVProcessor
+→ XML parsing
+→ IncomingStaticMessageStagingDao
+→ MLVService
+→ MlvCustomerMessageAddressProcedure
+→ PKG_QLM_INCOMING_STATIC_MSG.PRC_MLV_CUSTOMER_MSG_ADDR
+→ underlying Customer Message Address procedure.
+
+Check:
+
+1. XML parses without errors.
+2. Customer Message Address static type is correctly identified.
+3. Branch and customer values are mapped correctly.
+4. All message mapping entries are preserved.
+5. Raw incoming message is staged successfully.
+6. Customer Message Address business procedure executes.
+7. Procedure success/error OUT parameters indicate the actual result.
+8. Expected customer message address data is created or updated.
+9. No new relevant Oracle errors appear.
+10. No duplicate or unexpected records are created.
+
+Before execution, confirm that the fixture's customer and branch data are valid for DEV and that test data changes are authorized.
+
+Use targeted validation queries and report observed results.
+
+Do not send a real MQ message.
+
+STEP 6 — Run proper Java tests
+
+Run the previously passing isolated harness unit test again.
+
+Then run the relevant full module test suite without excluding unrelated tests.
+
+If compilation still fails, investigate and report the exact error.
+
+Do not quietly exclude tests just to report a green build.
+
+Check for accidental changes to production Java, XML fixtures, MQ configuration, and existing tests.
+
+STEP 7 — Final results
+
+Provide a detailed but concise report containing:
+
+Git status
+
+- DB feature branch found: YES/NO
+- Exact DB branch name
+- Customer Message Address wrapper preserved: YES/NO
+- Uncommitted Java test modification origin
+- Whether the Java test modification was retained or safely restored
+
+Oracle DEV
+
+- Connection successful: YES/NO
+- Package specification VALID: YES/NO
+- Package body VALID: YES/NO
+- Customer Message Address wrapper deployed: YES/NO
+- Required dependencies valid: YES/NO
+
+Testing
+
+- XML harness unit test: PASS/FAIL
+- Full Java compilation: PASS/FAIL
+- Relevant Java tests: PASS/FAIL
+- Actual Oracle DEV integration test: PASS/FAIL/NOT RUN
+- Staging procedure completed: YES/NO/NOT RUN
+- Customer Message Address business SP completed: YES/NO/NOT RUN
+- Database data verified: YES/NO/NOT RUN
+
+Include exact error messages for failures.
+
+Do not claim successful end-to-end testing unless the actual Oracle wrapper has executed and the expected database effects have been verified.
+
+Important constraints
+
+- Preserve both existing DB feature branches and their work.
+- Do not merge main into feature branches unnecessarily.
+- Do not overwrite existing uncommitted work without preserving it.
+- Do not automatically commit, push, merge PRs, or change production objects.
+- Do not deploy a full Oracle package that removes existing DEV functionality.
+- Complete all possible verification rather than stopping at the first problem.
+
+Goal: Finish the real Customer Message Address XML-to-Oracle DEV integration test safely and provide evidence suitable for Mohan's review.
