@@ -1,3 +1,188 @@
+
+You are working in the Citi QFXLM Oracle database repository.
+
+Task: Safely split the existing mixed database PR into two independent PRs and CREATE a new Git feature branch for Customer Message Address.
+
+Mohan explicitly requested that the current PR contain only Customer Additional Info changes. Customer Message Address must be moved to a separate feature branch and PR.
+
+File: "Packages/PKG_QLM_INCOMING_STATIC_MSG.sql"
+
+The package currently contains two new wrappers:
+
+1. "prc_mlv_customer_addl_info"
+2. "prc_mlv_customer_msg_addr"
+
+Both wrappers must be preserved, but their changes must be separated into different PRs.
+
+STEP 1 — Inspect and safeguard existing work
+
+Before making modifications:
+
+- Run "git status", "git branch -vv", and inspect the current branch and PR target.
+- Fetch the latest remote references.
+- Identify all commits and uncommitted changes involving the two wrappers.
+- Identify which changes belong exclusively to Customer Additional Info and which belong exclusively to Customer Message Address.
+- Safely preserve all existing work, including uncommitted changes, without overwriting anything.
+- Create a backup branch or another recoverable Git reference before restructuring.
+- Never use destructive reset, clean, or force-push operations.
+
+Do not discard either wrapper.
+
+STEP 2 — Create a NEW feature branch
+
+The new branch is exclusively for the Customer Message Address database wrapper.
+
+Follow the repository's existing feature-branch naming convention, with the Jira ID before the description.
+
+Suggested branch:
+
+"feature/C166472-43178-customer-message-address-wrapper"
+
+Verify that "C166472-43178" is the correct Jira ticket. If the actual Customer Message Address Jira ID is different, use the verified ID instead.
+
+Do not invent a Jira number.
+
+Inspect the other existing Git branches to match their naming convention.
+
+Create the branch using the appropriate base so that the eventual Customer Message Address PR contains only Customer Message Address-specific changes.
+
+Prefer the current PR's target branch as the clean base. If the Customer Additional Info PR must be merged first, preserve the Customer Message Address changes independently and explain whether a rebase or retarget will be required afterward.
+
+Actually create the new local branch. Do not merely suggest Git commands.
+
+STEP 3 — Move Customer Message Address changes to the new branch
+
+Preserve the complete implementation of:
+
+"prc_mlv_customer_msg_addr"
+
+Include its:
+
+- Package specification declaration.
+- Package body implementation.
+- Alpha branch-code resolution.
+- Numeric internal branch-code handling.
+- Create/Edit action handling.
+- Customer validation.
+- Call to "PKG_CUST_MSG_ADDR_MGMT.prc_edit_cust_msg_addr".
+- Oracle collection parameters.
+- Success/error handling.
+- Necessary package change-history entries.
+
+Preserve the latest changes already implemented according to Mohan's review.
+
+The new branch must contain only Customer Message Address-specific changes relative to its intended PR base.
+
+Do not accidentally include the Customer Additional Info wrapper's changes in the new PR.
+
+Do not modify unrelated existing procedures.
+
+STEP 4 — Clean the EXISTING Customer Additional Info branch
+
+Switch back to the original branch associated with the current DB PR.
+
+Remove ONLY the Customer Message Address-specific additions from that branch's changes.
+
+The existing PR must retain:
+
+"prc_mlv_customer_addl_info"
+
+Preserve all its latest corrections:
+
+- Approved 155 IN and 2 OUT parameters.
+- Alpha branch-code lookup.
+- Customer existence validation.
+- Create/Edit action determination.
+- Existing version or zero.
+- "p_user_id => 'MLVDATA'".
+- "p_auto_auth_flag => 1".
+- Correct NULL/default-value mappings.
+- Initialized empty collections where required.
+- Latest Mohan review corrections.
+- Existing error handling and logging.
+
+Do not revert any legitimate Customer Additional Info fixes.
+
+Keep the original staging procedures and all unrelated package functionality unchanged.
+
+STEP 5 — Ensure both branches remain independently valid
+
+Because both wrappers are in the same SQL package, carefully compare each branch against the intended PR base.
+
+For the existing Customer Additional Info branch:
+
+- The PR diff must contain only Customer Additional Info wrapper changes and related package history.
+- No Customer Message Address wrapper additions should remain in the PR diff.
+
+For the new Customer Message Address branch:
+
+- The PR diff must contain only Customer Message Address changes and related package history.
+- No Customer Additional Info wrapper changes should appear as new modifications in that PR.
+
+Be careful when editing the package specification and body. Both declarations and implementations must remain consistent.
+
+Avoid unnecessary whitespace, indentation, and line-ending changes.
+
+Do not remove pre-existing code from the target branch.
+
+STEP 6 — Validation
+
+For BOTH branches:
+
+1. Verify the correct procedures are included in their respective Git diffs.
+2. Verify the SQL package specification/body consistency.
+3. Check there are no duplicate procedure declarations.
+4. Check for unresolved merge conflicts.
+5. Run "git diff --check".
+6. Review the diff against the intended PR base, not just the previous commit.
+7. Ensure neither branch has lost relevant changes.
+8. Verify the package can compile when deployed with its required dependencies.
+
+If authorized Oracle DEV access is available, perform appropriate compilation checks. Otherwise state that compilation is pending.
+
+Do not claim compilation succeeded without running it.
+
+STEP 7 — Final Git status and report
+
+After completing the split, provide:
+
+1. Original Customer Additional Info branch name.
+2. New Customer Message Address branch name.
+3. Verified Jira ID used for the new branch.
+4. Which branch is currently checked out.
+5. Exact changes retained in the original branch.
+6. Exact changes placed in the new branch.
+7. Confirmation that both wrappers are preserved.
+8. File changes in each branch.
+9. Whether either branch requires a rebase after the first PR merges.
+10. Any remaining conflicts or dependencies.
+11. Exact Git commands needed to commit and push each branch safely.
+
+Important instructions:
+
+- CREATE the new local branch.
+- Perform the branch separation.
+- Do not permanently discard work.
+- Do not automatically commit, push, force-push, or create PRs.
+- Leave both sets of changes safely recoverable.
+- Let me review the final diffs before any remote updates.
+
+Expected final state:
+
+Original DB PR → Customer Additional Info wrapper only.
+
+New feature branch → Customer Message Address wrapper only.
+
+Customer Message Address Java PR → Remains separate and unchanged.
+
+Mohan wants the Customer Additional Info DB PR merged first. The Customer Message Address DB and Java PRs will proceed after DEV integration testing.
+
+
+
+
+₹-_-__-₹-_-_-__-
+
+
 We need to split the current DB pull request according to
 Mohan's latest review instructions.
 
