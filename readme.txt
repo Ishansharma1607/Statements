@@ -1,3 +1,24 @@
+
+
+# Current merge and working-tree status
+git status
+
+# All files that will differ from latest main
+git diff --cached --name-status origin/main
+
+# Export the complete proposed PR diff
+git diff --cached origin/main --output=PR36_FINAL_REVIEW.diff
+
+# Check for whitespace errors
+git diff --cached --check
+
+# Check unresolved merge entries
+git ls-files -u
+
+
+
+
+₹-+__+_+__+_+_
 Continue resolving Java PR #36.
 
 Your Git analysis confirmed:
