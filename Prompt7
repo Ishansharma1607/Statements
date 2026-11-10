@@ -1,0 +1,195 @@
+C166472-42566 — Resolve Mohan's PR #36 Comments and Minimize Unnecessary Changes
+
+Repository: "180228.qfxlm.qfxlm-qfxlmqfxstatic"
+
+PR: "#36"
+
+Feature branch: "feature/C166472-42566-customer-message-address-staging"
+
+Mohan has explicitly requested corrections because existing code was unnecessarily modified or removed, and previously rejected "Future.get()" logic has been reintroduced.
+
+I have reviewed the complete 12-file PR diff against main. Please implement the following corrections carefully.
+
+Step 1 — Protect work and inspect main
+
+- Inspect "git status", current branch, worktrees and uncommitted changes.
+- Fetch latest "origin/main".
+- Preserve a recoverable copy of all existing uncommitted work.
+- Inspect the complete PR diff and relevant historical review comments.
+- Do not force-push, hard-reset or discard unrelated developer changes.
+- Preserve Customer Message Address functionality and the latest approved mappings.
+
+Step 2 — Revert MLVStaticReceiver changes as Mohan requested
+
+File: "MLVStaticReceiver.java"
+
+The PR currently replaces:
+
+"processor.run();"
+
+with:
+
+Future<?> future = executorMlvStaticService.submit(processor);
+future.get();
+
+Mohan explicitly commented: "revert this code."
+
+Restore the receiver's existing implementation from the latest "origin/main", including its original constructor and processing invocation.
+
+Remove the feature-specific executor dependency, "Future.get()", and corresponding unnecessary exception-handling changes.
+
+Do not replace "Future.get()" with another executor or async mechanism without an approved requirement.
+
+Compare the full receiver file against main and retain only independently necessary, reviewed changes, if any.
+
+The preferred result is no unnecessary receiver diff in this PR.
+
+Step 3 — Revert IncomingStaticMessageMetadata
+
+File: "IncomingStaticMessageMetadata.java"
+
+Mohan explicitly said:
+
+"revert this code. use as it is from the main branch."
+
+Restore the exact current main-branch implementation, including Lombok annotations and constructors.
+
+Remove the manual replacement constructor and normalization behavior introduced by this feature.
+
+Do not overwrite other unrelated working-tree changes without backing them up first.
+
+Adapt callers and tests to the restored API.
+
+Step 4 — Investigate and resolve stagingEnabled
+
+File: "MLVProcessor.java"
+
+Mohan asked:
+
+"why do we implement stagingEnabled property here?"
+
+Current code introduces:
+
+"@Value("${mlv.staging.enabled:false}")"
+
+The disabled branch returns before both staging and business processing.
+
+Investigate whether this property has an approved functional requirement.
+
+Compare it against the original main implementation and existing staging behavior.
+
+If the property was introduced merely for temporary DEV testing, remove it from production code and use mocked dependencies or test-only configuration instead.
+
+Do not leave a default-false property that silently disables all MLV business processing unless that is explicitly the required behavior.
+
+Preserve the legitimate Customer Message Address detection and service delegation.
+
+Ensure staging succeeds before business processing according to the approved workflow.
+
+Review exception propagation carefully, including how the JMS listener handles failure and retry. Avoid silently suppressing genuine failures, but do not introduce unrelated exception-handling refactoring without justification.
+
+Step 5 — Review every existing-code deletion
+
+Mohan complained that existing code was removed in several files.
+
+Audit every deleted or replaced line in the complete PR diff.
+
+For each production file, determine:
+
+- Was this deletion needed for Customer Message Address?
+- Was it caused by merge-conflict resolution?
+- Was it introduced by a testing harness?
+- Is it an unnecessary AI-generated refactor?
+- Does it alter existing Customer Additional Info or staging behavior?
+
+Restore unrelated original code from the latest main.
+
+Also review changes to "IncomingStaticMessageStagingProcedure.java", including its logging differences. Preserve approved logging and data-protection requirements.
+
+Do not remove existing functionality simply to make the new implementation cleaner.
+
+Step 6 — Preserve necessary Customer Message Address work
+
+Keep the required implementation:
+
+- Customer Message Address detection in "MLVProcessor".
+- Correct staging-before-business execution.
+- Delegation through "MLVService".
+- "MlvCustomerMessageAddressProcedure".
+- Oracle collection mapping.
+- Verified message-type conversion.
+- Oracle procedure parameters and OUT handling.
+- Required XML validation.
+- Relevant mapping and procedure unit tests.
+
+Check compatibility with existing method signatures and callers.
+
+In particular, inspect "MLVService" to ensure replacing old methods hasn't unintentionally broken another existing caller.
+
+Verify that Java passes parameters compatible with the current Customer Message Address DB wrapper, especially user ID, action, version and Oracle arrays.
+
+The DB wrapper owns the approved action/version derivation and audit conventions. Do not duplicate that logic unnecessarily in Java.
+
+Step 7 — Fix tests after production restoration
+
+The PR currently includes "CustomerMessageAddressMlvFlowHarnessTest.java".
+
+It was created for simulated MQ-to-Oracle DEV testing and currently depends on the modified receiver constructor and executor.
+
+After restoring "MLVStaticReceiver":
+
+- Update the harness to work with the approved receiver implementation or invoke "MLVProcessor" directly where appropriate.
+- Do not change production code to accommodate a test harness.
+- Keep real Oracle integration explicitly opt-in.
+- Do not expose DEV credentials.
+- Decide whether the large developer-only harness belongs in the current PR or should be retained separately.
+- Preserve necessary focused business-mapping and procedure tests.
+
+Update existing tests only where required by actual approved production behavior.
+
+Do not rewrite unrelated tests merely to make them pass.
+
+Step 8 — Validate the final PR
+
+Run:
+
+- Java compilation.
+- Test compilation.
+- Relevant JUnit tests.
+- Relevant TestNG tests.
+- Customer Message Address mapping tests.
+- Processor staging/order tests.
+- Receiver regression tests.
+- "git diff --check".
+
+Review the complete PR diff against the latest main.
+
+Specifically verify:
+
+1. "MLVStaticReceiver.java" contains no reintroduced "Future.get()".
+2. "IncomingStaticMessageMetadata.java" matches current main.
+3. "MLVProcessor.java" has no unjustified default-false processing gate.
+4. Existing Customer Additional Info routing is preserved.
+5. Customer Message Address processing remains functional.
+6. No unintended source deletions or merge-conflict artifacts remain.
+7. Any remaining production modification can be explained in one or two sentences.
+
+If these changes affect how the old DEV integration harness operates, adapt the test and rerun relevant checks. Do not claim a new Oracle DEV integration test was executed unless it actually ran.
+
+Step 9 — Final report
+
+Provide:
+
+- File-by-file list of changes kept, removed and restored.
+- Explanation of why each remaining production change is necessary.
+- Confirmation of each Mohan review comment addressed.
+- Any other suspicious changes identified in the PR.
+- Final changed-file count and diff summary.
+- Build and test results.
+- Any remaining reviewer decisions.
+
+Do not commit or push automatically.
+
+I want to inspect the final diff before updating PR #36.
+
+Main goal: A minimal, fully reviewed Customer Message Address PR that preserves the existing application behavior and satisfies Mohan's explicit review feedback.
