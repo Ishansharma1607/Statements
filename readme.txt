@@ -1,3 +1,35 @@
+
+# 1. Confirm the correct branch and repository state
+git branch --show-current
+git status --short
+
+# 2. Get the latest main reference without merging
+git fetch origin main
+
+# 3. Include new/untracked Java source and test files
+# in the review diff WITHOUT staging their contents
+git ls-files --others --exclude-standard -- src/qfxlmqfxstatic/src | ForEach-Object {
+    git add -N -- $_
+}
+
+# 4. Export the actual current code state, including
+# committed changes and local Copilot corrections
+git diff --no-ext-diff --find-renames origin/main --output=PR36_AFTER_FIXES.diff
+
+# 5. Export the existing committed PR diff separately
+git diff --no-ext-diff --find-renames origin/main...HEAD --output=PR36_COMMITTED.diff
+
+# 6. Export changed-file inventory and status
+git diff --name-status origin/main | Out-File -Encoding utf8 PR36_FILES.txt
+git status --short | Out-File -Encoding utf8 PR36_STATUS.txt
+
+# 7. Check for whitespace and patch problems
+git diff --check
+
+
+
+
+
 git fetch origin
 
 git diff --no-ext-diff --find-renames \
