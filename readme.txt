@@ -1,3 +1,40 @@
+git fetch origin main
+git branch --show-current
+
+git merge-base --is-ancestor origin/main HEAD
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Output "Latest main is already in this branch"
+} else {
+    Write-Output "Branch does NOT yet include latest main"
+}
+
+git log --left-right --count HEAD...origin/main
+git status --short
+
+
+
+The working-tree reconciliation looks good, but before committing or pushing PR #36, verify that the feature branch's Git history includes the latest "origin/main".
+
+The current working-tree diff shows only seven Customer Message Address files, but the branch may still be based on an older main commit.
+
+Tasks:
+
+1. Check whether "origin/main" is an ancestor of the current feature branch HEAD.
+2. Inspect the merge base and commits unique to each branch.
+3. Preserve all existing staged, unstaged and untracked work in a recoverable backup.
+4. If latest main has not actually been integrated, safely merge it into the existing feature branch. Prefer a non-history-rewriting merge because this branch already has an open PR and numerous commits.
+5. Resolve merge conflicts while preserving the latest main version of all unrelated files, particularly Confirmation Party BIC, metadata, listener, deployment and configuration files.
+6. Reapply and preserve the seven intended Customer Message Address changes.
+7. Verify that the final PR diff against the latest main contains only the necessary Customer Message Address implementation and focused tests.
+8. Confirm that the final branch includes the corrected code with no Future.get(), no stagingEnabled gate and no unintended deletions.
+9. Rerun compilation, JUnit, TestNG and git diff checks if reconciliation changed source.
+10. Report whether the branch is now ready for a normal commit and push to update PR #36.
+
+Do not force-push, discard work, or create another feature branch. Do not push automatically.
+
+Do not claim the latest code passed Oracle DEV integration testing unless that test was rerun.
+₹+₹+_+_+_+_+_+_
 
 I reviewed the actual PR #36 diffs. Your previous report says the changes are corrected, but the current working-tree diff against "origin/main" still contains serious unrelated deletions and deployment changes.
 
