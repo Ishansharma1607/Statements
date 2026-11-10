@@ -1,4 +1,47 @@
 
+I reviewed the actual PR #36 diffs. Your previous report says the changes are corrected, but the current working-tree diff against "origin/main" still contains serious unrelated deletions and deployment changes.
+
+Please correct these before any commit or push.
+
+1. Inspect the existing feature branch, latest "origin/main", worktree, index and untracked files.
+
+2. Preserve all current uncommitted changes in a recoverable backup.
+
+3. Restore and retain all existing Confirmation Party BIC implementation and tests from the latest main, particularly:
+   
+   - MlvConfPartyBicMapper.java
+   - MlvConfPartyBicStoredProcedure.java
+   - MlvConfPartyBicRow.java
+   - Existing Confirmation Party BIC test classes
+
+4. Restore unrelated changes to production EMEA configuration, environment files, Dockerfile and deployment settings. The final Customer Message Address PR must not change these files.
+
+5. Restore the previous Confirmation Party BIC test coverage in TestMLVService.java. Add Customer Message Address tests without replacing the existing tests.
+
+6. Restore TestMLVStaticReceiver.java to the approved main implementation, avoiding indentation-only modifications.
+
+7. Recheck MLVProcessor.java. Preserve required Customer Message Address routing and staging-before-business processing, but avoid unnecessary behavioral changes affecting existing message types.
+
+8. Review the manual compatibility constructor in MLVService.java and ensure the new Oracle procedure uses the appropriate Spring-managed dependency pattern without breaking existing constructors or callers.
+
+9. Reconcile the branch with the latest main safely, keeping uncommitted work backed up. Confirm the final PR contains no deletions of code introduced by other developers.
+
+10. Verify the final working-tree diff, committed branch diff and untracked-file inventory. Ensure the files needed for compilation are actually tracked and will be included in the PR.
+
+11. Rerun Java compilation, JUnit and TestNG tests after the final reconciliation.
+
+12. Report the final file-by-file diff, including every remaining deletion and its justification.
+
+Do not commit, push, reset, or force-push automatically. I want to verify the final result first.
+
+git status --short
+git diff --name-status origin/main
+git ls-files --others --exclude-standard
+git log -1 --oneline
+
+
+
+₹-_-₹-₹---&
 # 1. Confirm the correct branch and repository state
 git branch --show-current
 git status --short
