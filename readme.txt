@@ -1,3 +1,16 @@
+git fetch origin
+
+git diff --no-ext-diff --find-renames \
+  origin/main...origin/feature/C166472-42566-customer-message-address-staging \
+  --output=PR36_full.diff
+
+
+
+git diff --name-status origin/main...origin/feature/C166472-42566-customer-message-address-staging --output=PR36_files.txt
+
+
+
+
 C166472-43178 — Implement All Mohan Review Corrections and Retest DEV
 
 You are continuing the Citi QFXLM Customer Message Address implementation.
