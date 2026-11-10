@@ -1,3 +1,107 @@
+Continue resolving Java PR #36.
+
+Your Git analysis confirmed:
+
+- Current branch: "feature/C166472-42566-customer-message-address-staging"
+- 58 feature-only commits.
+- 4 new commits on "origin/main".
+- Latest "main" is NOT yet incorporated into this branch.
+- The working tree contains uncommitted corrections, staged restored Confirmation Party BIC files, and untracked review artifacts.
+
+Goal: Safely synchronize this existing feature branch with the latest "origin/main" so that GitHub PR #36 shows only the intended Customer Message Address changes.
+
+Step 1 — Preserve all current work
+
+Before merging:
+
+1. Inspect the complete Git status and index.
+2. Create a recoverable backup of current staged, unstaged and untracked changes.
+3. Preserve Mohan's previously completed review corrections.
+4. Preserve all Customer Message Address implementation and tests.
+5. Verify the backup can recover the original state.
+
+Use a safe temporary stash or equivalent backup strategy to obtain a clean working tree.
+
+Do not use destructive reset, clean, or force-push commands.
+
+Step 2 — Integrate latest main
+
+Integrate the four newer "origin/main" commits into the existing feature branch.
+
+Prefer a normal merge rather than rebasing 58 commits on this already-published PR branch.
+
+Resolve conflicts carefully:
+
+- Preserve latest "main" for unrelated classes and configuration.
+- Preserve Confirmation Party BIC code and tests.
+- Preserve Customer Additional Info functionality.
+- Preserve necessary Customer Message Address functionality.
+- Do not blindly choose Accept Mine or Accept Theirs.
+- Do not overwrite another developer's changes.
+
+If completing the merge requires a Git commit, leave the final commit for my approval rather than automatically pushing anything.
+
+Step 3 — Reconcile the backed-up corrections
+
+Restore the intended corrections safely after incorporating main.
+
+Do not blindly reapply older versions of files now updated by main.
+
+Ensure:
+
+- "MLVStaticReceiver.java" matches latest main.
+- No "Future.get()" or unnecessary executor injection.
+- "IncomingStaticMessageMetadata.java" matches latest main.
+- No unjustified "mlv.staging.enabled" gate.
+- Existing Confirmation Party BIC functionality is preserved.
+- Customer Additional Info routing is preserved.
+- Customer Message Address routing, staging and Oracle delegation are preserved.
+- No unrelated deployment, Docker, environment or configuration modifications remain.
+
+Step 4 — Verify final PR content
+
+Compare the fully reconciled code against latest "origin/main".
+
+The intended feature changes should be limited to the Customer Message Address implementation, necessary MLV routing, and focused tests.
+
+Review every addition and deletion.
+
+Confirm that no unrelated source files are deleted or unnecessarily modified.
+
+Check both the working-tree diff and the proposed PR diff. Do not assume they are identical while changes remain uncommitted.
+
+Step 5 — Validate
+
+Run:
+
+- Java compilation.
+- Test compilation.
+- Full JUnit tests.
+- Full TestNG tests.
+- Customer Message Address mapping tests.
+- Receiver regression tests.
+- Confirmation Party BIC regression tests.
+- "git diff --check".
+
+Report:
+
+1. Whether the latest main commits were incorporated.
+2. Any conflicts and how they were resolved.
+3. The final changed-file list.
+4. Whether the working tree contains uncommitted changes.
+5. Whether the final PR would contain only intended changes.
+6. Actual build and test outcomes.
+7. Any remaining issues.
+
+Do not commit, push, force-push or update PR #36 without my approval.
+
+Priority: Preserve all existing main functionality and Mohan's review corrections while making PR #36 clean and mergeable.
+
+
+
+_+_+_+_-_+_+_-+_+_-
+
+
 git fetch origin main
 git branch --show-current
 
