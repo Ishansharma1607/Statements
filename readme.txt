@@ -1,3 +1,20 @@
+CustomerMessageAddressMappingEntry entry = entries.get(0);
+
+
+
+inParameters.put(P_SUPP_TRACER_CONF_FLAG, flagOrDatabaseDefault(entry.getSuppTracerConfFlag(), P_SUPP_TRACER_CONF_FLAG));
+
+
+inParameters.put(P_SUPP_NEW_EOD_CONF_FLAG, flagOrDatabaseDefault(entry.getSuppNewEodConfFlag(), P_SUPP_NEW_EOD_CONF_FLAG));
+
+
+inParameters.put(P_SUPP_NEW_CMS_CONF_FLAG, flagOrDatabaseDefault(entry.getSuppNewCmsConfFlag(), P_SUPP_NEW_CMS_CONF_FLAG));
+
+
+inParameters.put(P_SUPP_AMEND_CMS_CONF_FLAG, flagOrDatabaseDefault(entry.getSuppAmendCmsConfFlag(), P_SUPP_AMEND_CMS_CONF_FLAG));
+
+
+
 
 
 # Current merge and working-tree status
