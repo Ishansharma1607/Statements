@@ -1,3 +1,7 @@
+
+Mohan, I verified both mappings. "MM_CONFIRM_AMND" maps to "MM_AMND" and "MM_CONFIRM_CANC" maps to "MM_REVL". The "messageAddressTypeRows()" method uses these mappings when preparing the database collection, so both are already handled correctly.
+
+
 CustomerMessageAddressMappingEntry entry = entries.get(0);
 
 
