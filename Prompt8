@@ -1,0 +1,1079 @@
+MASTER IMPLEMENTATION TASK — Jira C166472-44122
+
+Netting GI Release Scheduler – Java
+
+YOUR ROLE
+
+Act as a senior Java backend engineer implementing a production-grade change in Citi QFXLM.
+
+You are the implementation agent. The technical requirements, architecture, constraints and implementation sequence are provided below.
+
+Your responsibility is to:
+
+1. Inspect the actual repository and existing implementation.
+2. Verify the existing framework and database contracts.
+3. Implement the complete Netting GI Release Scheduler using the established patterns.
+4. Run relevant local tests.
+5. Review your exact Git diff.
+6. Report completed work, tests and unresolved blockers.
+
+This is an implementation task, not just an analysis task.
+
+However, do not guess missing business values or modify unrelated code. If you discover a genuine ambiguity that affects correctness, explain it and ask me a specific question.
+
+The reviewer, Mohan, strongly prefers minimal, carefully aligned, reviewable changes that follow the existing framework.
+
+---
+
+1. PROJECT AND JIRA DETAILS
+
+Jira: C166472-44122
+
+Title: Netting GI Release Scheduler – Java
+
+Primary repository: "180228.qfxlm.qfxlm-engine"
+
+Java package: "com.citi.qlm.engine.processor"
+
+DB reference repository: QFXLM DB repository containing "PKG_QLM_NETTING_MGMT.sql"
+
+DB reference PR: #4159
+
+Requirement from Jira:
+
+«Implement Netting GI Release Scheduler like MM GI Release Scheduler.»
+
+Acceptance criteria:
+
+«Check whether the Netting GI Release Scheduler works like the MM GI Release Scheduler.»
+
+Target: Aim to complete implementation and local testing by November 21–23, 2026, allowing time for Mohan's review before the sprint deadline in the first week of December.
+
+Mohan has confirmed that the stored-procedure work is already handled separately.
+
+YOU MUST IMPLEMENT ONLY THE JAVA/ENGINE-SIDE CHANGES.
+
+Do not modify the database repository or recreate stored procedures.
+
+---
+
+2. WHAT MOHAN EXPLAINED
+
+The QFXLM Engine repository contains multiple scheduled processors.
+
+Each scheduler follows an existing framework involving:
+
+- A processor extending "AbstractProcessor"
+- Scheduler business-object configuration
+- Spring Batch job configuration
+- A tasklet invoking "runProcess()"
+- Scheduler event registration and triggering
+- Existing database and MQ utilities
+
+The framework invokes the registered processor when the configured scheduler time is reached.
+
+Mohan explicitly instructed that the new Netting scheduler must follow the existing GI Release Scheduler pattern.
+
+Do not introduce another scheduling framework.
+
+Do not introduce "@Scheduled", new Quartz infrastructure, independent threads, executors, Spring Boot scheduling configuration or unnecessary components.
+
+Business purpose
+
+This is a recovery/release scheduler.
+
+A GI message may already have been generated in the database but not successfully published to the external GI partner because of an earlier failure or interruption.
+
+The Netting scheduler should:
+
+1. Run through the existing Engine scheduling framework.
+2. Retrieve eligible Netting GI messages from Oracle.
+3. Publish those messages to the configured GI partner queue through the existing MQ mechanism.
+4. Update their release status in the database using the new Netting procedure.
+5. Report accurate success/failure results.
+
+The existing MM implementation is the reference for behavior.
+
+Business status values
+
+The relevant existing constants include:
+
+- "Constants.GI_GENERATED = "18""
+- "Constants.GI_INT_STATUS = "4""
+- "Constants.REGN_PRE_PROCESSED = "11""
+- "Constants.MODULE_MM = "MM""
+- "Constants.GI_SYSTEM = "GI""
+- "Constants.OUT_FLAG = "O""
+
+Do not invent new status codes.
+
+Verify exactly how these values are used in the reference processor and Netting stored procedure.
+
+---
+
+3. STRICT REVIEW RULES FROM MOHAN
+
+These requirements are extremely important.
+
+Minimal modifications
+
+- Make only the changes needed for Jira 44122.
+- Preserve existing functioning code.
+- Do not refactor "GIReleaseProcessor" unnecessarily.
+- Do not refactor "AbstractProcessor".
+- Do not rewrite "EngineUtil".
+- Do not remove legacy code simply because it looks unused.
+- Do not introduce new abstractions when existing methods are sufficient.
+- Do not create unnecessary helper classes.
+- Avoid extra validation already performed by the framework.
+- Do not alter unrelated processors, scheduler jobs or package configurations.
+
+Formatting and alignment
+
+Mohan closely reviews:
+
+- Indentation
+- Alignment
+- Tabs versus spaces
+- Parameter formatting
+- Constant placement
+- Import organization
+- Unnecessary blank lines
+- Change history, where the existing file convention requires it
+- Unrelated formatting differences
+
+Match the formatting used in neighboring files.
+
+Do not run a whole-file formatter.
+
+Do not produce hundreds of whitespace-only changes.
+
+Existing framework
+
+Mohan explicitly stated that the scheduler may not work if we introduce a different approach from the existing Engine framework.
+
+Follow the same processor lifecycle, tasklet configuration and scheduler registration conventions.
+
+PR expectations
+
+Before completing:
+
+- Inspect the full Git diff.
+- Confirm existing processor logic is untouched.
+- Confirm only Jira-related files changed.
+- Validate XML syntax and Java compilation.
+- Run relevant tests.
+- Report exactly what was and was not tested.
+
+Do not commit, push, create a PR, deploy, or send messages to a live MQ without explicit authorization.
+
+---
+
+4. REQUIRED INITIAL INSPECTION
+
+Before editing, inspect these existing files and associated call sites.
+
+A. Java processor
+
+"src/main/java/com/citi/qlm/engine/processor/GIReleaseProcessor.java"
+
+Study:
+
+- Constructors
+- "initialize()"
+- "validate()"
+- "process()"
+- "readMessages()"
+- "publishMessage()"
+- "returnFinalStatus()"
+- "checkMessages()"
+
+B. Abstract framework
+
+"src/main/java/com/citi/qlm/engine/processor/AbstractProcessor.java"
+
+Study:
+
+- "runProcess()"
+- "scheduleJob()"
+- "initialize()"
+- "validate()"
+- "process()"
+- Scheduler event initialization
+- Job name and business-object handling
+- Spring context, process log and error handling
+
+The new processor must extend this class and reuse its lifecycle.
+
+C. Engine utilities
+
+Find and inspect:
+
+- "EngineUtil.getGIMsg()"
+- "EngineUtil.updateGIMessageStatus()"
+- "EngineUtil.setCallableStatement()"
+- "EngineUtil.setMsgTagArr()"
+- "EngineUtil.sendMQTextMessageWithHeader()"
+
+Study the existing Oracle collection conversion and DTO handling.
+
+D. DTOs and constants
+
+Inspect:
+
+- "OnlineMessageDTO"
+- "SchedulerEvent"
+- "Constants.java"
+- Relevant database constants
+- Existing GI message-status constants
+
+Do not modify DTOs unless the Netting output genuinely cannot be represented by the existing model.
+
+E. Spring XML
+
+The existing configuration is in "qlmJobs.xml".
+
+Find both occurrences of:
+
+- "giReleaseProcessor"
+- "giRelProcTask"
+
+Also inspect:
+
+- "abstractProcessor" bean
+- Other adjacent scheduler jobs
+- Related job registration and lookup logic
+- All usages of the job identifier
+- Scheduler business-object-to-job mapping
+
+Do not assume that creating a Spring XML job is enough to make it executable.
+
+F. Database references
+
+Inspect the already-created Netting procedures in "PKG_QLM_NETTING_MGMT.sql".
+
+Read both specification and implementation for:
+
+- "prc_get_gi_message"
+- "prc_upd_netting_inout_msg"
+
+Also inspect the existing MM procedure for comparison.
+
+If another repository is inaccessible, report that limitation. Do not invent details.
+
+---
+
+5. IMPLEMENT THE NEW NETTING PROCESSOR
+
+Create a new Java class:
+
+"src/main/java/com/citi/qlm/engine/processor/NettingGIReleaseProcessor.java"
+
+It must extend:
+
+"AbstractProcessor"
+
+Follow the existing GI Release Processor pattern.
+
+The new processor should contain the equivalent required lifecycle methods:
+
+- "initialize()"
+- "validate()"
+- "process()"
+
+Reuse inherited "runProcess()".
+
+Do not override the inherited scheduling lifecycle unnecessarily.
+
+Constructors
+
+Follow the reference pattern, including the no-argument constructor required by the Spring bean and the "SchedulerEvent" constructor if it is part of how existing scheduler processors are constructed.
+
+initialize()
+
+Initialize only the information required for Netting:
+
+- Netting GI retrieval procedure
+- Netting status-update procedure
+- Module
+- External system
+- Queue destination
+- External-system key
+- Logger context
+
+Known procedure names:
+
+"PKG_QLM_NETTING_MGMT.prc_get_gi_message"
+
+"PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg"
+
+For the GI interface, the Netting DB procedure currently uses MM module conventions.
+
+The reference query uses transmission configuration with "module = 'MM'", "source_system = 'GI'", and "in_or_out = 'O'".
+
+Therefore, check whether the new Java processor should use:
+
+"Constants.MODULE_MM"
+
+and:
+
+"Constants.GI_SYSTEM"
+
+with:
+
+"Constants.OUT_FLAG"
+
+This is the expected approach unless the actual runtime configuration proves otherwise.
+
+Do not invent a new module value such as ""NETTING"" for queue lookup.
+
+The existing GI queue lookup is:
+
+"Constants.getExtBranchSendQueue(organization, extSystem, module, Constants.OUT_FLAG)"
+
+Follow it unless the Netting configuration explicitly requires something different.
+
+validate()
+
+Follow the reference GI processor.
+
+Validate:
+
+- The appropriate destination queue is configured.
+- The existing MQ connection validation succeeds.
+
+Reuse:
+
+"EngineUtil.testManagerConn()"
+
+Do not create a new MQ connectivity mechanism.
+
+Preserve the existing logging and failure-reporting style.
+
+process()
+
+Follow the reference sequence:
+
+1. Fetch eligible Netting messages.
+2. Handle an empty result correctly.
+3. Iterate through the returned messages.
+4. Publish each through the existing GI MQ publishing method.
+5. Track which messages were successfully published.
+6. Prepare status-update records.
+7. Update Oracle through the Netting-specific procedure.
+8. Handle partial failures accurately.
+9. Set "remarks[0]" and "remarks[1]" using the existing framework conventions.
+10. Return the appropriate boolean status.
+
+Do not report success just because the Java method completed without throwing an exception.
+
+Do not report an updated-record count unless it is supported by the actual stored-procedure result or another reliable verification.
+
+Reuse the existing batching conventions where appropriate.
+
+Review whether the reference processor overwrites "updCount" rather than accumulating it across batches. Do not blindly reproduce a counting defect in the new class.
+
+Avoid modifying the old processor to fix unrelated issues.
+
+---
+
+6. NETTING MESSAGE RETRIEVAL
+
+Use this stored procedure:
+
+"PKG_QLM_NETTING_MGMT.prc_get_gi_message"
+
+The uploaded SQL package declares:
+
+1. "p_branch_code IN"
+2. "p_result_set OUT SYS_REFCURSOR"
+3. "p_core_flag IN NUMBER DEFAULT 0"
+
+Expected call
+
+The existing GI Release Processor calls its retrieval procedure using branch code and an OUT cursor.
+
+Determine whether the Netting procedure can be called with two parameters using the database default for "p_core_flag".
+
+If the existing pattern is compatible, use it.
+
+Do not add the optional third parameter without a concrete requirement.
+
+Existing Netting query behavior
+
+The SQL reads:
+
+- "qlm_netting_inout_msg"
+- "qlm_netting_inout_msg_dtls"
+- "qlm_transmission_status"
+
+It selects eligible messages with status "18", with additional logic for certain statuses when "p_core_flag = 1".
+
+It checks the transmission configuration and retrieves the required GI message content.
+
+The procedure uses the existing Oracle collection type "tab_inout_msg_update".
+
+The procedure also changes eligible message status to "4" during retrieval, according to its current implementation.
+
+Java implementation
+
+The existing processor uses:
+
+"EngineUtil.getGIMsg(resultSet)"
+
+Inspect this utility and verify that it correctly maps all returned fields from the Netting result cursor into "OnlineMessageDTO".
+
+Check:
+
+- Branch code
+- Module
+- Internal reference number
+- External reference number
+- Version
+- Sequence number
+- Message type
+- Message content
+- Status
+- TAG20
+- Other fields required by publishing or status updates
+
+Only introduce Netting-specific conversion if the existing utility is incompatible.
+
+Do not duplicate "getGIMsg()" unnecessarily.
+
+Important status behavior
+
+Because the Netting retrieval procedure updates status to "4", inspect how failures are handled afterward.
+
+Confirm that failed MQ messages remain recoverable and are not incorrectly treated as successfully released.
+
+Follow the existing transaction and retry approach without inventing new status transitions.
+
+---
+
+7. REUSE THE EXISTING MQ PUBLISHING FRAMEWORK
+
+The reference method is:
+
+"GIReleaseProcessor.publishMessage(String extSystemKey, String destQueue, OnlineMessageDTO msgDTO, String correlationId)"
+
+It uses:
+
+"EngineUtil.sendMQTextMessageWithHeader(...)"
+
+It also handles GI-related message headers and correlation information.
+
+Prefer reusing the existing public publishing method if it can safely be called from the new processor without relying on hidden processor state.
+
+If direct reuse is appropriate, do that rather than copying its entire implementation.
+
+If direct reuse is not suitable, explain the reason and implement the smallest equivalent logic using the existing MQ utility.
+
+Do not:
+
+- Create a new JMS connection factory.
+- Add a new MQ client library.
+- Hardcode a queue name.
+- Invent a queue manager.
+- Change MQ credentials or SSL configuration.
+- Disable existing connection validation.
+- Modify the existing GI publisher for unrelated reasons.
+
+Success and failure
+
+If MQ publishing succeeds, follow the established successful-release status behavior.
+
+If publishing fails, retain the correct retry/recovery behavior and update status appropriately through the DB procedure, as required by the existing implementation.
+
+Never assume a message was published merely because the database retrieval succeeded.
+
+---
+
+8. CRITICAL: NETTING STATUS-UPDATE PROCEDURE
+
+Use:
+
+"PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg"
+
+The uploaded DB specification defines:
+
+1. "p_tab_inout_msg_update IN tab_inout_msg_update"
+2. "p_intermediate_status IN ..."
+3. "p_success_flag OUT VARCHAR2"
+4. "p_error_message OUT VARCHAR2"
+5. "p_citi_screening_xml_flag IN NUMBER DEFAULT 0"
+
+Existing Java utility
+
+"EngineUtil.updateGIMessageStatus(...)"
+
+This existing utility:
+
+- Creates a "TAB_INOUT_MSG_UPDATE" Oracle array.
+- Passes the intermediate status.
+- Registers OUT parameters 3 and 4.
+- Passes the CitiScreening flag.
+- Executes the stored procedure.
+
+However, the existing utility uses parameter 4 as a numeric updated-record count:
+
+"Integer.parseInt(cst.getString(4))"
+
+CRITICAL INCOMPATIBILITY
+
+For the Netting procedure, parameter 4 is an error message, not an updated-record count.
+
+The Netting SQL implementation assigns:
+
+- "p_success_flag = 'Y'"
+- "p_error_message = NULL"
+
+on success.
+
+Therefore, blindly calling the existing utility could cause an incorrect result or exception.
+
+YOU MUST ADDRESS THIS.
+
+Required approach
+
+First verify the exact procedure contract in the checked-out DB reference.
+
+If the contract matches the uploaded SQL:
+
+- Do not use the existing numeric-count interpretation.
+- Avoid modifying existing FX/MM/FT/FI behavior.
+- Prefer a small Netting-specific database status-update method.
+- Reuse the current Oracle array-construction conventions.
+- Use the existing message DTO structure.
+- Use the existing intermediate status value "Constants.GI_INT_STATUS".
+- Check the Netting procedure's success flag.
+- Capture and report the error message on failure.
+- Close JDBC resources properly.
+- Ensure a failed DB update is reported as a failure.
+
+The new helper should be placed in the smallest appropriate existing or Netting-specific location.
+
+Do not create an entire new DAO framework merely for this procedure.
+
+Updated-count requirement
+
+The Netting procedure's fourth parameter does not return the updated count.
+
+Do not fabricate one.
+
+Do not treat the size of the submitted message list as proof that every database row was updated.
+
+If the existing success/failure reporting depends on an actual updated count, adapt the Netting processor to report what is verifiable, or ask for clarification if the acceptance criteria require an exact database-updated count.
+
+Keep diagnostic logs accurate.
+
+Oracle array mapping
+
+The existing implementation uses:
+
+"TAB_INOUT_MSG_UPDATE"
+
+and:
+
+"EngineUtil.setMsgTagArr(...)"
+
+Inspect their exact usage before reusing them.
+
+Ensure correct parameter positions, Oracle types, and status values.
+
+Do not pass a standard Java array where Oracle requires its collection type.
+
+Do not change the database procedure signature from Java.
+
+---
+
+9. SPRING XML JOB CONFIGURATION
+
+Use the existing configuration file:
+
+"qlmJobs.xml"
+
+The existing reference is:
+
+<job id="giReleaseProcessor" restartable="false">
+    <step id="giRelProcStep">
+        <tasklet ref="giRelProcTask" />
+    </step>
+    <listeners>
+        <listener ref="defaultJobListener" />
+    </listeners>
+</job>
+
+New Netting job
+
+Add an equivalent new job following the existing formatting.
+
+Proposed identifiers:
+
+- Job ID: "nettingGIReleaseProcessor"
+- Step ID: "nettingGIRelProcStep"
+- Tasklet ID: "nettingGIRelProcTask"
+
+Before finalizing, verify whether other runtime mappings require a particular job name.
+
+Do not reuse the existing GI job or step identifiers.
+
+New tasklet
+
+The existing reference uses:
+
+"org.springframework.batch.core.step.tasklet.MethodInvokingTaskletAdapter"
+
+with:
+
+- "scope="step""
+- An inner processor bean
+- "parent="abstractProcessor""
+- "targetMethod="runProcess""
+
+Create the equivalent Netting tasklet that targets:
+
+"com.citi.qlm.engine.processor.NettingGIReleaseProcessor"
+
+Keep the inherited processor configuration and existing job listener.
+
+Do not replace the tasklet with a new mechanism.
+
+Scheduler registration
+
+Search the whole repository for:
+
+- "giReleaseProcessor"
+- "giRelProcTask"
+- "MM_GI_REL_PROC_BO"
+- "jobRegistry"
+- "jobName"
+- "businessObject"
+- Existing event-to-job mappings
+
+Determine how the scheduler identifies and launches a job.
+
+Add any required Netting registration using exactly the same existing mechanism.
+
+Important:
+
+The XML job declaration may not be sufficient for runtime execution.
+
+Verify that the job can be resolved and launched through the scheduler infrastructure.
+
+Do not invent or hardcode scheduler timings in Java.
+
+The actual scheduler frequency and activation must follow existing scheduler configuration and approved business-object setup.
+
+---
+
+10. NETTING BUSINESS-OBJECT ID
+
+Existing GI release IDs include:
+
+- FX GI Release: "9205"
+- MM GI Release: "9105"
+- FT GI Release: "9402"
+
+The new Netting scheduler must not accidentally share the existing MM business-object ID if it represents a separate scheduled business object.
+
+Required investigation
+
+Search the repository and available scheduler configuration for an already assigned Netting GI Release business-object ID.
+
+If found, use the confirmed value and show where it came from.
+
+If not found, DO NOT INVENT ONE.
+
+Ask me:
+
+«What is the approved business-object ID and configured scheduler job name for the Netting GI Release Scheduler?»
+
+Meanwhile, implement the independent processor and XML structure that can safely be completed without inventing that value.
+
+Add a constant only after the ID has been verified.
+
+Do not randomly select an unused-looking number.
+
+---
+
+11. NETTING GI RESPONSE PROCESSING
+
+The database reference also contains GI response-handling logic in:
+
+"PKG_QLM_INCOMING_MSG_MGMT"
+
+Relevant procedures include:
+
+- "prc_update_netting_gi_response"
+- "prc_update_gi_status"
+
+These are part of processing GI responses and must not be confused with the outbound scheduler's immediate post-publish status update.
+
+Important distinction
+
+The scheduler's immediate outbound update uses:
+
+"PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg"
+
+Incoming GI response processing is a separate concern.
+
+Do not automatically add incoming-response processing to the new Java scheduler.
+
+Do not modify existing response consumers.
+
+Only change the response-processing integration if you find an explicit Jira requirement and a verified missing Engine-side call.
+
+---
+
+12. TESTING REQUIREMENTS
+
+Implement focused tests using the project's existing test framework and conventions.
+
+Avoid unnecessary new dependencies or extensive test infrastructure.
+
+A. Initialization tests
+
+Verify:
+
+- Correct Netting retrieval procedure.
+- Correct update procedure.
+- Correct module.
+- Correct GI external system.
+- Correct destination queue lookup.
+- Appropriate behavior when configuration is missing.
+
+B. Database retrieval tests
+
+Verify:
+
+- Correct stored-procedure call.
+- Correct parameter count and positions.
+- Correct OUT cursor handling.
+- Correct conversion into "OnlineMessageDTO".
+- Empty-result handling.
+- SQL failure behavior.
+
+C. MQ publishing tests
+
+Verify:
+
+- Correct queue and key.
+- Correct message payload.
+- Successful send.
+- Failed send.
+- Correct handling of multiple messages.
+- No unexpected extra publication.
+
+Mock MQ interactions.
+
+Do not send real messages during unit tests.
+
+D. Status-update tests
+
+Verify:
+
+- Oracle "TAB_INOUT_MSG_UPDATE" mapping.
+- Intermediate status "4".
+- Success flag "Y".
+- Failure flag "N".
+- Error-message handling.
+- Null success-error-message behavior.
+- No numeric parsing of the Netting error-message output.
+- Failure propagation into scheduler remarks.
+- Appropriate retry handling after failed MQ publication.
+
+E. Batch processing tests
+
+Verify:
+
+- One message.
+- Multiple messages.
+- More messages than the configured batch size.
+- Some MQ publications succeeding and others failing.
+- A later batch encountering a database-update failure.
+- No misleading update totals.
+- Correct overall job success/failure reporting.
+
+F. Spring configuration tests
+
+Verify:
+
+- XML parses successfully.
+- Job IDs are unique.
+- Step IDs are unique.
+- Tasklet ID is unique.
+- Processor class resolves.
+- "abstractProcessor" parent resolves.
+- Listener exists.
+- "runProcess()" is invoked.
+- Runtime scheduler registration resolves the intended Netting job.
+
+G. Regression tests
+
+Verify existing behavior is not changed for:
+
+- MM GI release
+- FX GI release
+- FT GI release
+- FI CitiScreening release
+- Other jobs in "qlmJobs.xml"
+
+Run the relevant Gradle tasks available in the repository.
+
+Report the actual commands and outcomes.
+
+A successful compilation is not proof that database or MQ integration passed.
+
+---
+
+13. SOURCE-CODE SAFETY
+
+Before modifying:
+
+1. Check the current branch.
+2. Run "git status".
+3. Inspect the existing differences.
+4. Identify unrelated changes.
+5. Review any existing ".github/copilot-instructions.md".
+6. Inspect project-specific Gradle instructions.
+
+Never automatically reset or delete my local changes.
+
+Do not run destructive Git commands.
+
+Do not alter local passwords, MQ security settings, connection strings or environment configurations.
+
+Do not include temporary files in the PR.
+
+Avoid logging raw customer or financial message payloads where existing logging conventions do not require them.
+
+No credentials or secrets should be copied into tests or source files.
+
+---
+
+14. IMPLEMENTATION SEQUENCE
+
+Follow these phases.
+
+Phase A — Repository inspection
+
+Inspect the existing GI Release Processor, Engine utility methods, AbstractProcessor, Spring XML, scheduler registration, and the Netting stored-procedure contracts.
+
+Produce a concise mapping between the existing functionality and the proposed Netting implementation.
+
+Identify only genuine blockers.
+
+Phase B — New processor
+
+Implement:
+
+"NettingGIReleaseProcessor.java"
+
+Use the established abstract processor lifecycle.
+
+Reuse the existing MQ publisher and DTO conversion wherever safe.
+
+Phase C — Database integration
+
+Connect the new processor to the Netting GI retrieval procedure.
+
+Implement compatible status-update handling without disturbing the existing module paths.
+
+Verify the complete success/failure contract.
+
+Phase D — Spring job
+
+Add the Netting job and tasklet configuration to "qlmJobs.xml".
+
+Preserve the existing configuration.
+
+Check the scheduler registration and business-object mapping.
+
+Phase E — Focused tests
+
+Compile and execute relevant unit tests.
+
+Verify the database and MQ interactions through mocks or approved test infrastructure.
+
+Phase F — Final diff review
+
+Inspect every changed file.
+
+Remove only accidental or unrelated changes you introduced.
+
+Do not remove pre-existing user changes.
+
+Ensure no unrelated formatting changes exist.
+
+Phase G — Handoff
+
+Provide a complete implementation report, using the format below.
+
+---
+
+15. QUESTIONS YOU MUST RESOLVE
+
+Do not guess these items.
+
+Question 1 — Business-object ID
+
+Is a Netting GI Release business-object ID already registered?
+
+If not, ask me to confirm it with Mohan.
+
+Question 2 — Scheduler job mapping
+
+Does any other Java, Spring or database configuration map the business-object ID to "giReleaseProcessor"?
+
+If so, identify the exact location and the required Netting registration.
+
+Question 3 — Status-update result
+
+Does the deployed Netting update procedure return only success/error, as shown in DB PR #4159?
+
+If yes, implement correct success/error handling.
+
+Do not parse the error message as an update count.
+
+If an exact updated-record count is required, ask how it should be obtained rather than inventing one.
+
+Question 4 — DTO compatibility
+
+Does "EngineUtil.getGIMsg()" correctly map the Netting cursor output?
+
+If yes, reuse it.
+
+If not, provide the field-level mismatch and make the smallest necessary correction.
+
+Question 5 — Message release semantics
+
+The Netting retrieval procedure moves eligible records from status "18" to "4" before MQ publication.
+
+What happens if MQ sending fails?
+
+Trace the reference behavior and the new Netting status-update procedure.
+
+Preserve the intended retry flow, without assuming successful release.
+
+Question 6 — Runtime availability
+
+Has the Netting DB package been deployed in the intended test environment?
+
+A merged PR or successful local build does not prove that the procedure is available in DEV.
+
+If unavailable, finish all independent local work and report DEV integration as blocked.
+
+Question 7 — Separate scheduler configuration
+
+Does Netting need any approved new timing, scheduler data or business-object registration outside the Engine codebase?
+
+Do not invent those values.
+
+Ask only if necessary.
+
+---
+
+16. WHAT YOU MUST NOT DO
+
+Do not:
+
+- Modify the existing GI Release Processor for unrelated reasons.
+- Modify "FIMT54XGenerationScheduler.java".
+- Change "AbstractProcessor.java" unless a verified requirement makes it unavoidable.
+- Rewrite existing MQ publishing.
+- Rewrite the existing Engine status-update utility for all modules.
+- Modify Oracle package code.
+- Recreate procedures already implemented by Mohan.
+- Hardcode a Netting queue name.
+- Invent a business-object ID.
+- Change existing scheduler timing values.
+- Add unnecessary Spring annotations.
+- Add an entirely new scheduling framework.
+- Introduce unnecessary validation or custom exceptions.
+- Create extra utility classes without need.
+- Make formatting-only changes in unrelated files.
+- Claim DEV testing passed unless it actually passed.
+- Commit or push without my approval.
+
+---
+
+17. FINAL IMPLEMENTATION REPORT
+
+When finished, give me:
+
+A. Implementation summary
+
+Explain what was implemented and how it follows Mohan's reference pattern.
+
+B. Exact files changed
+
+List all files created, modified or deleted.
+
+Explain each change.
+
+C. Database integration
+
+Show the retrieval procedure and parameters.
+
+Show the status-update procedure and parameters.
+
+Explain exactly how the parameter-4 incompatibility was handled.
+
+D. Scheduler registration
+
+Show the new job ID, tasklet, processor class and business-object mapping.
+
+If the business-object ID remains unconfirmed, mark the scheduler activation as blocked rather than calling it ready.
+
+E. MQ behavior
+
+Explain which existing publishing function was reused and how the destination queue is resolved.
+
+F. Test results
+
+Provide real commands, results and failures.
+
+Separate unit testing, compilation, Spring configuration testing, Oracle integration testing and MQ integration testing.
+
+G. Diff review
+
+Show the Git diff summary.
+
+Confirm whether unrelated files were untouched.
+
+H. Remaining blockers
+
+Identify only unresolved matters, particularly:
+
+- Business-object ID
+- Job registration
+- DEV stored-procedure availability
+- Accurate DB status-update behavior
+- Tests awaiting integration access
+
+I. PR readiness
+
+State one of:
+
+- Ready for my review
+- Partially ready, with blockers
+- Not ready, with reasons
+
+Do not call it fully complete while required integration or registration remains unresolved.
+
+---
+
+18. MOST IMPORTANT FINAL INSTRUCTION
+
+Do not stop after inspecting the code and giving recommendations.
+
+You are expected to perform the implementation.
+
+Work through each phase, complete the parts supported by the actual code, and ask me only when a real missing business decision blocks safe progress.
+
+Keep changes minimal, preserve Mohan's established scheduler framework, and prioritize correctness over additional abstractions.
+
+If you must choose between an elegant redesign and a small, consistent change that follows the existing Engine implementation, choose the small, consistent change.
+
+Start by inspecting the repository, verifying the precise Netting procedure contracts, and identifying the scheduler registration. Then implement the Java and XML changes.
