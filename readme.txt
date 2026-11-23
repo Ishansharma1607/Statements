@@ -1,4 +1,76 @@
 
+We have received three review comments from Mohan on PR #589 for Jira C166472-44122.
+
+Act as the implementation developer and address the comments using the smallest changes possible.
+
+Comment 1 — Remove GIReleaseProcessor injection
+
+Mohan said: "remove this GIReleaseProcessor injection here. implement publish functionality in same class."
+
+Remove the GIReleaseProcessor member variable and its initialization from NettingGIReleaseProcessor.
+
+Implement publishMessage() directly inside NettingGIReleaseProcessor, following the existing GIReleaseProcessor.publishMessage() logic as closely as possible.
+
+Preserve existing GI queue publishing, headers, correlation ID, branch configuration, success/failure behavior and logging conventions.
+
+Do not modify GIReleaseProcessor itself.
+
+Comment 2 — Simplify status-update calls
+
+Mohan said: "remove multiple update call. check with batch count if equal invoke update call. else outside for loop invoke update call for pending records. implement as same as GIReleaseProcessor."
+
+Review process() against GIReleaseProcessor.process().
+
+Follow the existing batch-update pattern:
+
+- Collect messages in msgsToUpd.
+- When msgsToUpd.size() equals Constants.getBatchUpdateCount(), invoke the update method.
+- Clear the successfully handled batch according to the reference behavior.
+- After the loop, invoke the update method once for pending records.
+
+Remove the additional retry collection, accumulated retry calls, and unnecessary retry-specific complexity if this is required to follow Mohan's instruction.
+
+However, before removing failure handling, inspect whether the Netting retrieval procedure's status 18-to-4 transition can leave messages stranded after a DB update failure. Preserve accurate failure reporting and explicitly flag any unresolved risk. Do not introduce an unrelated redesign.
+
+Comment 3 — Use EngineUtil.updateGIMessageStatus
+
+Mohan said: "invoke EngineUtil.updateGIMessageStatus method with all method params."
+
+CRITICAL: Before modifying this, inspect:
+
+1. EngineUtil.updateGIMessageStatus()
+2. EngineUtil.setCallableStatement()
+3. The actual Netting procedure specification and body in DB PR #4159.
+
+Our earlier analysis found that EngineUtil.updateGIMessageStatus expects a numeric updated-record count from OUT parameter 4, whereas PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg declares parameter 4 as p_error_message OUT VARCHAR2.
+
+If this mismatch still exists, DO NOT blindly replace the custom implementation.
+
+Explain exactly what would fail when the existing utility is invoked.
+
+Recommend the smallest compatible solution that satisfies Mohan's intention to reuse the shared utility without breaking existing FX/MM/FT/FI behavior.
+
+If the requirement cannot be satisfied safely without approval, mark comment 3 as requiring clarification. Do not invent updated-row counts or silently change the stored procedure contract.
+
+Final requirements
+
+- Follow Mohan's existing coding standards and framework.
+- No unrelated refactoring.
+- No changes to DB procedures.
+- Keep existing GIReleaseProcessor unchanged.
+- Update focused unit tests.
+- Run Gradle compilation and regression tests.
+- Review Git diff and ensure no unrelated changes.
+- Do not commit or push.
+
+Implement comments 1 and 2 where safely possible. Investigate comment 3 and report its exact compatibility issue before making any potentially breaking change.
+
+Provide changed files, test results, and the proposed resolution for comment 3.
+
+
+
+
+----_-_-_-_-_-__-_-
 Mohan, I verified both mappings. "MM_CONFIRM_AMND" maps to "MM_AMND" and "MM_CONFIRM_CANC" maps to "MM_REVL". The "messageAddressTypeRows()" method uses these mappings when preparing the database collection, so both are already handled correctly.
 
 
