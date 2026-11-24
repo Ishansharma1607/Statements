@@ -1,3 +1,29 @@
+Continue Jira C166472-44122, PR #589.
+
+Mohan has clarified review Comment 3: he has requested DB PR changes so that the Netting status-update procedure returns an updated-record count. He wants us to reuse EngineUtil.updateGIMessageStatus(), exactly like the existing GIReleaseProcessor.
+
+Your instructions:
+
+1. Fetch and inspect the latest DB PR changes. Confirm whether PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg now returns a numeric updated count in OUT parameter 4 when successful.
+2. Do not assume the DB changes are complete merely because Mohan requested them.
+3. Once confirmed compatible, replace our Netting-specific status-update implementation with EngineUtil.updateGIMessageStatus(), using the existing five-parameter Java method and the Netting update procedure name.
+4. Follow GIReleaseProcessor's batch-update flow and correctly accumulate returned update counts across batches. Ensure a failed update is not silently reported as successful.
+5. Remove obsolete custom JDBC status-update code, Oracle array handling and unnecessary imports.
+6. Preserve our newly implemented direct publishMessage() method, as Mohan requested in Comment 1.
+7. Keep GIReleaseProcessor, AbstractProcessor and EngineUtil unchanged.
+8. Update the Netting unit tests and rerun relevant regression tests.
+9. Report whether the DB change is verified, exact files changed, test results and any remaining blockers.
+
+If the DB PR still returns an error message instead of a numeric count, do not implement the incompatible call. Report the blocker and retain the working Netting implementation until the DB contract is updated.
+
+Make minimal changes. Do not modify DB code, commit or push.
+
+
+
+
+
+
+₹-&-&-&&&&&
 
 We have received three review comments from Mohan on PR #589 for Jira C166472-44122.
 
