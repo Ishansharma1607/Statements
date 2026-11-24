@@ -1,3 +1,262 @@
+
+Copilot Agent — Implement Mohan's Final Review Instructions
+
+Jira: C166472-44122
+PR: #589 — Netting GI Release Scheduler
+
+Continue working in my existing feature branch. Mohan has clarified the final changes required for review Comment 3. Implement them now, keeping changes minimal and preserving existing functionality.
+
+1. Mohan's exact instructions
+
+Mohan confirmed:
+
+- Add a boolean flag such as "nettingEnabled" to "OnlineMessageDTO".
+- Set this flag to "true" for messages retrieved inside "NettingGIReleaseProcessor".
+- In "EngineUtil.setMsgTagArr()", check the flag.
+- If "nettingEnabled" is true, populate the Oracle array's "MODULE" field with the DTO's actual module value.
+- Otherwise preserve the existing behavior.
+- For our Netting GI scheduler, the actual module value is "MM", not "NT".
+- The Netting database table contains modules such as "MM", "FX", and "FI"; "NT" is not a valid value for that column.
+- Reuse the existing "EngineUtil.updateGIMessageStatus()" method.
+- No unrelated changes are required.
+
+2. Inspect before editing
+
+Read the current implementations of:
+
+- "OnlineMessageDTO.java"
+- "NettingGIReleaseProcessor.java"
+- "GIReleaseProcessor.java"
+- "EngineUtil.setMsgTagArr()"
+- "EngineUtil.updateGIMessageStatus()"
+- "EngineUtil.setCallableStatement()"
+- "TestNettingGIReleaseProcessor.java"
+
+Verify the latest Netting stored procedure contract from DB PR #4159, including its numeric updated-record count in OUT parameter 4.
+
+Check the DTO's existing getter/setter conventions and whether a suitable Netting indicator already exists. Avoid duplicate fields.
+
+3. Modify OnlineMessageDTO.java
+
+Introduce a boolean field, preferably:
+
+private boolean nettingEnabled;
+
+Provide getters/setters consistent with the class's existing conventions.
+
+The default must be "false", so all existing processors retain their current behavior.
+
+Do not modify unrelated DTO fields, constructors, serialization behavior or existing business logic.
+
+4. Modify NettingGIReleaseProcessor.java
+
+When converting each Netting database cursor row to "OnlineMessageDTO":
+
+msgDto.setNettingEnabled(true);
+msgDto.setModule(Constants.MODULE_MM);
+
+Make sure both values are assigned before the DTO is added to the list.
+
+Keep existing GI publishing behavior unchanged.
+
+Preserve Mohan's earlier changes:
+
+- Direct "publishMessage()" implementation inside the Netting class.
+- No "GIReleaseProcessor" injection.
+- Standard batch-update pattern.
+
+5. Modify EngineUtil.setMsgTagArr()
+
+Locate the assignment of Oracle array index "15", representing "MODULE".
+
+Currently, the normal GI path populates it with "null".
+
+Implement only the Netting-specific conditional:
+
+msgArr[index][15] = msgList.get(index).isNettingEnabled()
+        ? msgList.get(index).getModule()
+        : null;
+
+Adapt the variable names and accessor methods to the actual code.
+
+Important:
+
+- Apply this conditional at the correct point in the existing mapping.
+- Do not overwrite it later in the method.
+- Preserve the original value for every non-Netting DTO.
+- Do not globally change "MODULE" to "MM".
+- Do not change existing FX, FI, MM or FT behavior.
+- Do not change TAG20 mapping unless the verified Netting procedure requires it and the existing shared utility cannot already provide it. If there is an unresolved TAG20 dependency, report it before making unrelated changes.
+
+6. Replace the custom Netting update implementation
+
+Inside "NettingGIReleaseProcessor", remove the custom JDBC/Oracle-array status-update method once the shared utility is verified compatible.
+
+Use:
+
+EngineUtil.updateGIMessageStatus(
+    msgsToUpd,
+    updateSP,
+    Constants.MODULE_MM,
+    conn,
+    Constants.GI_INT_STATUS,
+    false
+);
+
+Important distinction:
+
+- The argument "Constants.MODULE_MM" selects the existing standard five-parameter utility path.
+- The "nettingEnabled" flag ensures the Oracle collection contains the actual DTO module, "MM".
+- These are separate concerns.
+
+Confirm that the shared utility's behavior and Netting stored procedure's five-parameter contract are compatible.
+
+Remove obsolete imports, helper methods, Oracle array construction, and direct callable-statement code from the Netting processor.
+
+Do not modify the existing "EngineUtil.updateGIMessageStatus()" logic. Only make the minimal conditional change in "EngineUtil.setMsgTagArr()" to populate the module for Netting-enabled messages.
+
+7. Preserve correct batch handling
+
+Follow Mohan's approved GI release processing pattern:
+
+1. Retrieve eligible Netting GI messages using the existing Netting stored procedure.
+2. Publish each message using the direct "publishMessage()" implementation in "NettingGIReleaseProcessor".
+3. After successful MQ publication, set the DTO status to "Constants.REGN_PRE_PROCESSED" ("11").
+4. If publication fails, preserve status "Constants.GI_GENERATED" ("18").
+5. Add each processed DTO to "msgsToUpd".
+6. When "msgsToUpd.size()" reaches "Constants.getBatchUpdateCount()", call "EngineUtil.updateGIMessageStatus()".
+7. Accumulate the returned updated-record count.
+8. Clear the processed batch.
+9. After the loop, update the remaining messages once.
+10. Return scheduler failure if any batch update fails, any returned count differs from the submitted batch size, or any MQ publication fails.
+
+Do not introduce additional retries, duplicate MQ publishing, or transaction-management changes.
+
+8. Update unit tests
+
+Update "TestNettingGIReleaseProcessor.java" and add focused coverage for the shared utility integration.
+
+Verify:
+
+- "nettingEnabled" defaults to "false".
+- Netting processor sets "nettingEnabled" to "true".
+- Netting DTO module is "MM", not "NT".
+- "EngineUtil.setMsgTagArr()" populates Oracle array index "15" with "MM" when the Netting flag is enabled.
+- Existing non-Netting DTOs retain the previous index "15" value of "null".
+- Existing TAG20 behavior remains correct for Netting and unchanged for other processors.
+- The shared utility invokes the five-parameter procedure path for module "MM".
+- OUT parameter 4 is interpreted as the numeric updated-record count.
+- Multiple batches are correctly processed and counted.
+- Zero or unexpected updated counts cause scheduler failure.
+- Mixed MQ publication results are handled correctly.
+- No duplicate MQ publication occurs.
+- Direct GI publishing remains unchanged.
+
+IMPORTANT: Avoid mocking the entire "EngineUtil.updateGIMessageStatus()" implementation in tests intended to verify Oracle array mapping. Use appropriate focused tests to verify the actual shared utility behavior.
+
+9. Regression testing
+
+Run compilation and these test classes:
+
+- "TestNettingGIReleaseProcessor"
+- "TestGIReleaseProcessor"
+- "TestAbstractProcessor"
+- "TestFIMT54XGenerationScheduler"
+
+Use the installed Gradle 8.12.1 if the repository Gradle wrapper still executes "help" instead of forwarding arguments.
+
+There are pre-existing unrelated local modifications in:
+
+- "README.md"
+- "FIMT54XGenerationScheduler.java"
+
+Do not overwrite, reset, revert, or include these unrelated changes.
+
+If the FI scheduler's existing local syntax error prevents compilation, use a clean temporary Git worktree containing only the intended Jira changes and run the tests there.
+
+Do not claim that the original working tree compiled if only the clean worktree compiled.
+
+Also verify:
+
+- Spring XML parses successfully.
+- No duplicate job/tasklet registrations exist.
+- "git diff --check" passes.
+- No unrelated files were modified.
+
+10. Final code review
+
+Compare the implementation against:
+
+- Mohan's three PR #589 review comments.
+- "GIReleaseProcessor.java".
+- The latest DB PR #4159 procedure contract.
+- Existing engine coding conventions.
+
+Check that:
+
+1. Direct GI MQ publishing remains implemented inside "NettingGIReleaseProcessor".
+2. Batch processing matches Mohan's requested pattern.
+3. Status updates use "EngineUtil.updateGIMessageStatus()".
+4. Only Netting-enabled messages populate the Oracle collection's "MODULE" field from their DTO.
+5. Actual Netting module is "MM".
+6. Existing FX, FI, MM and FT behavior remains unchanged.
+7. No unnecessary changes, methods, classes, or abstractions were introduced.
+
+11. Final report
+
+Once implementation and testing are complete, report:
+
+A. Changes made
+
+Provide exact filenames and methods modified.
+
+B. Mohan's comments
+
+Confirm separately whether review comments 1, 2 and 3 have been addressed.
+
+C. Database compatibility
+
+Confirm:
+
+- Stored procedure name.
+- Five-parameter mapping.
+- Module "MM" in the Oracle array.
+- Numeric updated-record count from OUT parameter 4.
+- Whether TAG20 mapping is compatible.
+
+D. Test results
+
+Report exact tests run, passed, failed, skipped and compilation results.
+
+E. Git status
+
+Show modified and untracked files, including unrelated pre-existing changes.
+
+F. Remaining blockers
+
+Identify any genuine issues still requiring Mohan's clarification or DEV integration testing.
+
+12. Strict restrictions
+
+- Do not modify "GIReleaseProcessor.java".
+- Do not modify "AbstractProcessor.java".
+- Do not change existing "EngineUtil.updateGIMessageStatus()" logic.
+- Do not change stored procedures or DB repository files.
+- Do not change MQ queue configuration.
+- Do not change existing GI headers or publishing behavior.
+- Do not change unrelated scheduler implementations.
+- Do not introduce unnecessary retry logic.
+- Do not modify unrelated README or FI scheduler changes.
+- Do not commit, push, update the PR or deploy without my approval.
+
+Proceed with implementation now. Mohan has explicitly approved the Netting boolean flag approach. Make the minimal changes, run the tests and report the results.
+
+
+
+
+
+_-&-&&-&&&_
+
 Jira C166472-44122 — Final PR #589 Review Correction
 
 Your role
