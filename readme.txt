@@ -1,3 +1,234 @@
+Jira C166472-44122 — Final PR #589 Review Correction
+
+Your role
+
+Continue as my Java implementation agent. Mohan has clarified his third review comment in today's meeting.
+
+Implement the smallest correct change, following his instructions exactly.
+
+Do not blindly change code before verifying the existing DB and Java contracts.
+
+1. Mohan's latest instructions
+
+Mohan said:
+
+- Reuse "EngineUtil.updateGIMessageStatus()".
+- Pass the new Netting stored-procedure name.
+- For the "module" argument, we can pass "NT" or an empty value.
+- FX and FI have special conditions in the utility; otherwise it uses the existing five-parameter call.
+- No changes should be required in "EngineUtil.java".
+- Verify the implementation carefully and report any differences before modifying shared code.
+
+He specifically wants us to avoid introducing unnecessary project changes.
+
+2. Current implementation
+
+Our PR #589 already has:
+
+- "NettingGIReleaseProcessor.java"
+- Direct GI MQ publishing inside the Netting class, as Mohan requested.
+- Standard batch update structure.
+- "qlmJobs.xml" registration.
+- "TestNettingGIReleaseProcessor.java"
+
+The latest local tests reported 53 passing.
+
+Comments 1 and 2 have already been addressed.
+
+We are working ONLY on review Comment 3.
+
+Do not undo the earlier fixes.
+
+3. Latest database change
+
+DB PR #4159 was updated.
+
+Latest inspected commit:
+
+"2330979dbca13c1838e17436cd4f979bb88eb76d"
+
+The procedure is:
+
+"PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg"
+
+It now returns:
+
+- Parameter 3: success flag.
+- Parameter 4: numeric updated-record count as a string on success.
+
+The count is accumulated using "SQL%ROWCOUNT".
+
+This resolves our earlier incompatibility with:
+
+"Integer.parseInt(cst.getString(4))"
+
+First fetch and verify the latest DB PR again before editing.
+
+4. CRITICAL — Investigate module compatibility
+
+Inspect these exact methods:
+
+1. "EngineUtil.updateGIMessageStatus()"
+2. "EngineUtil.setMsgTagArr()"
+3. "EngineUtil.setCallableStatement()"
+
+Also inspect the latest body of:
+
+"PKG_QLM_NETTING_MGMT.prc_upd_netting_inout_msg"
+
+The previous investigation suggested:
+
+- Oracle array index 15 ("MODULE") was populated as "NULL".
+- Oracle array index 17 ("TAG20") was populated as empty.
+- The Netting SP contains module-related conditions.
+
+Determine exactly whether these values cause any actual incompatibility.
+
+Do not assume passing "NT" as the Java method argument automatically populates the Oracle collection's "MODULE" field.
+
+Trace how the module argument is used within the utility and how the stored procedure uses the Oracle array.
+
+Test both proposed arguments
+
+Evaluate:
+
+Constants.MODULE_MM
+
+"NT"
+
+And the appropriate empty value:
+
+Constants.EMPTY
+
+Determine which produces the correct five-parameter call and meets the actual Netting SP contract.
+
+Important:
+
+The Netting GI MQ queue configuration currently uses:
+
+"GI + MM + O"
+
+Do not change that queue configuration just because the status-update utility uses "NT" or an empty module argument.
+
+The two purposes must remain separate.
+
+5. Required implementation
+
+If the latest DB SP is compatible with the existing utility, replace the custom Netting status-update implementation with:
+
+EngineUtil.updateGIMessageStatus(
+    msgsToUpd,
+    updateSP,
+    verifiedModuleArgument,
+    conn,
+    Constants.GI_INT_STATUS,
+    false
+);
+
+"verifiedModuleArgument" represents the correct argument established by your investigation. Use the actual verified value in production code, not this placeholder.
+
+Follow the existing "GIReleaseProcessor.process()" pattern:
+
+- Publish messages.
+- Add each message to "msgsToUpd".
+- Invoke the shared utility when the configured batch size is reached.
+- Clear the processed batch.
+- Invoke the utility once after the loop for remaining messages.
+- Accumulate updated counts across batches.
+- Report failure when the actual updated count does not match the submitted count.
+- Preserve accurate success/failure reporting.
+
+Remove obsolete Netting-specific JDBC update code and unnecessary imports after successful replacement.
+
+Do not modify "EngineUtil.java".
+
+6. If an incompatibility still exists
+
+If the shared utility does not populate Oracle collection fields required by the Netting SP, do not force the change just to satisfy the PR comment.
+
+Instead:
+
+1. Identify the exact Java statement causing the mismatch.
+2. Identify the exact SQL predicate requiring the missing value.
+3. Explain why passing "NT" or empty does or does not resolve it.
+4. Determine whether the latest DB changes already account for that behavior.
+5. Recommend the smallest compatible solution.
+6. Ask me only if an unavoidable design decision remains.
+
+Do not alter a shared utility or DB procedure without approval.
+
+Preserve the currently working Netting-specific implementation if the shared call is proven incompatible.
+
+7. Strict scope
+
+Do not modify:
+
+- "GIReleaseProcessor.java"
+- "AbstractProcessor.java"
+- "EngineUtil.java"
+- "Database.java"
+- "Constants.java"
+- Other existing processors
+- DB stored procedures
+- Unrelated files
+
+Keep the direct MQ publisher requested by Mohan.
+
+Keep the Spring job configuration unchanged unless an actual error is identified.
+
+Preserve all unrelated local modifications, including existing README and FI scheduler changes.
+
+Do not reintroduce multiple retry-update calls.
+
+8. Tests
+
+Update focused tests to verify:
+
+- Correct procedure name.
+- Correct module argument.
+- Correct five-parameter callable-statement path.
+- Correct numeric updated-record count.
+- Successful update.
+- Zero updated records.
+- Multiple batches.
+- Mixed MQ success/failure.
+- Overall scheduler result.
+- No duplicate MQ publication.
+
+Run:
+
+- "TestNettingGIReleaseProcessor"
+- "TestGIReleaseProcessor"
+- "TestAbstractProcessor"
+- "TestFIMT54XGenerationScheduler"
+
+Use installed Gradle 8.12.1 if the repository Gradle wrapper still executes only "help".
+
+If the existing local FI scheduler modification prevents compilation, validate using a clean temporary worktree containing only the Jira changes. Do not overwrite unrelated local work.
+
+9. Final report
+
+Give me:
+
+1. Whether "NT", empty, or another verified value is correct.
+2. Exact behavior of Oracle array "MODULE" and "TAG20".
+3. Whether the latest DB SP supports those values.
+4. Whether Comment 3 is fully addressed.
+5. Exact changes made.
+6. Updated test counts and results.
+7. Remaining blockers.
+
+No commit, push, PR updates or deployments without my approval.
+
+Start by verifying the latest DB procedure and the shared utility behavior. Then implement the compatible solution immediately if it is safe.
+
+
+
+
+
+
+
+₹+₹+₹+_+_+₹+_
 Continue Jira C166472-44122, PR #589.
 
 Mohan has clarified review Comment 3: he has requested DB PR changes so that the Netting status-update procedure returns an updated-record count. He wants us to reuse EngineUtil.updateGIMessageStatus(), exactly like the existing GIReleaseProcessor.
