@@ -1,3 +1,25 @@
+Perform the final review of Jira C166472-44122 / PR #589 against the current working-tree diff.
+
+Mohan's three requested changes have now been implemented. Do not refactor or rewrite working code.
+
+1. Verify that NettingGIReleaseProcessor sets nettingEnabled=true and module=MM.
+2. Verify EngineUtil.setMsgTagArr populates Oracle MODULE index 15 with MM only for Netting-enabled DTOs, preserving existing behavior otherwise.
+3. Confirm EngineUtil.updateGIMessageStatus uses the correct five-parameter procedure and numeric update count.
+4. IMPORTANT: Compare Oracle array index 17 (TAG20), now populated as EMPTY by the shared utility, against every relevant WHERE clause and update condition in the latest DB PR #4159. The previous implementation populated the actual TAG20 value. Verify whether removing that value affects Netting status updates.
+5. Verify direct GI MQ publishing matches the existing GIReleaseProcessor implementation.
+6. Confirm all three Mohan review comments are addressed.
+7. Run Netting and relevant GI regression tests.
+8. Identify any remaining blocking defect. Fix only verified Jira-related defects.
+
+Preserve unrelated local changes in README.md and FIMT54XGenerationScheduler.java. Do not include them in PR #589.
+
+Report test results, exact changed files, and whether the implementation is ready for PR review.
+
+Do not commit, push, or update the PR without my approval.
+
+
+
+_-&-₹&-₹-&-
 
 Copilot Agent — Implement Mohan's Final Review Instructions
 
